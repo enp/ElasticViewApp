@@ -5,9 +5,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.StaticHandler;
 
 public class Verticle extends AbstractVerticle {
 
@@ -22,10 +25,13 @@ public class Verticle extends AbstractVerticle {
 	}
 
 	public void start() throws Exception {
-		vertx.createHttpServer().requestHandler(request -> {
-			log.info("request from ["+request.remoteAddress()+"]");
-			request.response().end("Hello world");
-		}).listen(portNumber);
+		HttpServer server = vertx.createHttpServer();
+		Router router = Router.router(vertx);
+		router.route("/hello").handler(context -> {
+			context.response().end("Hello World");
+		});
+		router.route("/*").handler(StaticHandler.create());
+		server.requestHandler(router::accept).listen(portNumber);
 	}	
 	
 }
