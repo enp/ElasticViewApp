@@ -1,0 +1,35 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+mainClassName = 'io.vertx.core.Launcher'
+
+def mainVerticleName = 'ru.itx.vertx.Verticle'
+
+jar {
+	from { configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) } }
+	manifest {
+		attributes 'Main-Class': mainClassName
+		attributes 'Main-Verticle': mainVerticleName
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile 'io.vertx:vertx-core:3.+'
+	testCompile 'io.vertx:vertx-unit:3.+'
+	testCompile 'junit:junit:4.+'
+	compile fileTree(dir: 'lib', include: ['*.jar'])
+}
+
+test {
+	outputs.upToDateWhen { false }
+	testLogging.showStandardStreams = true
+}
+
+run {
+	args = ['run', mainVerticleName]
+}
