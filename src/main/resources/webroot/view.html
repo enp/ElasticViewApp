@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Elastic View</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <script src="lib/jquery.min.js"></script>
+  <script src="lib/jquery.bpopup.min.js"></script>
+  <script src="lib/jsoneditor.min.js"></script>
+  <script src="view.js"></script>
+  <link rel="stylesheet" href="lib/jsoneditor.min.css">
+  <link rel="stylesheet" href="view.css">
+</head>
+<body>
+<form>
+    <div class="group">
+      <label for="index">Index</label><br/>
+      <select id="index">
+      </select>
+    </div>
+    <div class="group">
+      <label for="type">Type</label><br/>
+      <select id="type">
+      </select>
+    </div>
+    <div class="group">
+      <label for="filter">Filter</label><br/>
+      <input id="filter" type="text" value="*"/>
+    </div>
+    <div class="group">
+      <label for="limit">Limit</label><br/>
+      <input id="limit" type="text" value="10" size="5"/>
+    </div>
+    <div class="group">
+      <br/>
+      <button id="view" type="button">View</button>
+    </div>
+  </form>
+  <br>
+  <div id="data"></div>
+  <div id="popup">
+  	<div id="jsonview"></div>
+  </div>
+</body>
+</html>

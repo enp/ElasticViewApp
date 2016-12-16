@@ -1,0 +1,52 @@
+body {
+  font-family: Verdana;
+  background-color: #FFFFFF;
+}
+form {
+  margin: 0 auto;
+  width: 900px;
+}
+label {
+  font-size: 0.8em;
+}
+.group {
+  display: inline-block;
+}
+.ui-widget {
+  font-size: 0.8em;
+}
+.documents {
+  width:95%;
+  margin: 0 auto;
+  border-width: 2px;
+  border-style: solid;
+  border-color: #3883fa;
+  border-collapse: collapse;
+}
+.head {
+  border-width: 1px;
+  padding: 4px;
+  border-style: solid;
+  border-color: #3883fa;
+  background-color: #96bdfa;
+  font-size: 0.8em
+}
+.cell {
+  border-width: 1px;
+  padding: 4px;
+  border-style: solid;
+  border-color: #3883fa;
+  font-size: 0.8em
+}
+.tr-hover {
+  background-color: #bbd4fa;
+  cursor: pointer;
+}
+#popup { 
+  background-color:#fff;
+  color:#000;
+  display:none; 
+  padding:20px;
+  min-width:700px;
+  min-height: 100px;
+}

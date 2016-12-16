@@ -1,4 +1,4 @@
-package ru.itx.vertx;
+package ru.itx.elasticview;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,35 +17,40 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import ru.itx.elasticview.ElasticView;
 
 @RunWith(VertxUnitRunner.class)
-public class VerticleTest {
+public class ElasticViewTest {
 	
 	private Integer portNumber;
 	
-	private Logger log = LoggerFactory.getLogger(Verticle.class.getName());
+	private Logger log = LoggerFactory.getLogger(ElasticView.class.getName());
 
 	private Vertx vertx;
 	
-	public VerticleTest() throws IOException {
-		JsonObject conf = new JsonObject(new String(Files.readAllBytes(Paths.get("vertxwebapp.conf"))));
-		portNumber = conf.getInteger("portNumber", 1025);
+	public ElasticViewTest() throws IOException {
+		JsonObject conf = new JsonObject(new String(Files.readAllBytes(Paths.get("elasticview.conf"))));
+		portNumber = conf.getJsonObject("server").getInteger("port", 1025);
 		log.info("client params ["+portNumber+"]");
 	}
 	
 	@Before
 	public void setUp(TestContext context) throws Exception {
 		vertx = Vertx.vertx();
-	    vertx.deployVerticle(Verticle.class.getName(), context.asyncAssertSuccess());
+	    vertx.deployVerticle(ElasticView.class.getName(), context.asyncAssertSuccess());
 	}
 
 	@Test
 	public void test(TestContext context) throws IOException {
 		final Async async = context.async();
 		HttpClient client = vertx.createHttpClient();
-		client.getNow(portNumber, "localhost", "/", response -> {
-			log.info("response with status code " + response.statusCode());
-			client.close();
+		client.getNow(portNumber, "localhost", "/view", response -> {
+			response.bodyHandler( body -> {
+				log.info(body.toString());
+		    });
+		    response.exceptionHandler(error -> {
+		      context.fail(error);
+		    });
 			async.complete();
 		});
 	}
