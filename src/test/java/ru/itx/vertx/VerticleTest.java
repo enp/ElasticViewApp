@@ -45,6 +45,7 @@ public class VerticleTest {
 		HttpClient client = vertx.createHttpClient();
 		client.getNow(portNumber, "localhost", "/", response -> {
 			log.info("response with status code " + response.statusCode());
+			client.close();
 			async.complete();
 		});
 	}
