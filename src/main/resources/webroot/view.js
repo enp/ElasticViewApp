@@ -5,13 +5,17 @@ var ElasticView = {
 	jsonview  : {},
 	
 	viewIndexes : function() {
-		$.ajax({ type: "GET", url: "view", dataType: "json" }).done(function(data) { 
+		$.ajax({ type: "GET", url: "view", dataType: "json" })
+		.done(function(data) { 
 			indexes = data
 			$.each(indexes, function(index) {
 				$("#index").append(new Option(index));
 			})
 			ElasticView.viewTypes()
-		})		
+		})
+		.fail(function(jqXHR, textStatus, errorThrown ) {
+			alert(errorThrown)
+		})
 	},
 	
 	viewTypes : function() {
@@ -30,7 +34,8 @@ var ElasticView = {
 		var filter = $("#filter").val()
 		var size   = $("#limit").val()
 		$("#data").empty();
-		$.ajax({ type: "GET", url: "view/"+index+"/"+type+"?filter="+filter+"&size="+size, dataType: "json" }).done(function(data) {
+		$.ajax({ type: "GET", url: "view/"+index+"/"+type+"?filter="+filter+"&size="+size, dataType: "json" })
+		.done(function(data) {
 			ElasticView.documents = data
 			var table = $("<table>")
 			var head = $("<tr>")
@@ -58,10 +63,13 @@ var ElasticView = {
 			})
 			$("#data").append(table)
 		})
+		.fail(function(jqXHR, textStatus, errorThrown ) {
+			alert(errorThrown)
+		})
 	},
 		
 	init : function() {
-		ElasticView.jsonview = new JSONEditor($("#jsonview")[0], { search: false, mode: 'view', sortObjectKeys: true, name: 'NM' })
+		ElasticView.jsonview = new JSONEditor($("#jsonview")[0], { search: false, mode: 'view', sortObjectKeys: true })
 		$("#index").change(ElasticView.viewTypes)
 		$("#view").click(ElasticView.view)
 		ElasticView.viewIndexes()

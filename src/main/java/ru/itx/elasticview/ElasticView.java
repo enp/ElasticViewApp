@@ -32,6 +32,7 @@ public class ElasticView extends AbstractVerticle {
 		serverOptions.setHost(conf.getJsonObject("server").getString("host", "127.0.0.1"));
 		clientOptions.setDefaultPort(conf.getJsonObject("client").getInteger("port", 9200));
 		clientOptions.setDefaultHost(conf.getJsonObject("client").getString("host", "127.0.0.1"));
+		clientOptions.setConnectTimeout(30);
 		prefix = conf.getJsonObject("server").getString("prefix", "");
 		showHiddenIndexes = conf.getJsonObject("view").getBoolean("showHiddenIndexes", false);
 	}
@@ -54,13 +55,16 @@ public class ElasticView extends AbstractVerticle {
 	}
 
 	private void view(RoutingContext context) {
+		
 		String index  = context.request().getParam("index");
 		String type   = context.request().getParam("type");
 		String filter = context.request().getParam("filter");
 		String size   = context.request().getParam("size");
 		String path   = index+"/"+type+"/_search?q="+filter+"&size="+size;
+		
 		log.info("Request to ES : "+path);
-		vertx.createHttpClient(clientOptions).getNow(path, response -> {
+		
+		vertx.createHttpClient(clientOptions).get(path, response -> {
 			response.bodyHandler( body -> {
 				JsonObject data = body.toJsonObject();
 				JsonObject view = new JsonObject();
@@ -76,11 +80,15 @@ public class ElasticView extends AbstractVerticle {
 		      context.fail(error);
 		    });
 
-		});
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).end();
 	}
 
 	private void viewAll(RoutingContext context) {
-		vertx.createHttpClient(clientOptions).getNow("/_all/_mapping", response -> {
+		vertx.createHttpClient(clientOptions).get("/_all/_mapping", response -> {
 			response.bodyHandler( body -> {
 				JsonObject data = body.toJsonObject();
 				JsonObject view = new JsonObject();
@@ -103,8 +111,9 @@ public class ElasticView extends AbstractVerticle {
 		    response.exceptionHandler(error -> {
 		      context.fail(error);
 		    });
-
-		});
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).end();
 	}
 	
 }
