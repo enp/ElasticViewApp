@@ -60,9 +60,15 @@ public class ElasticView extends AbstractVerticle {
 		String type   = context.request().getParam("type");
 		String filter = context.request().getParam("filter");
 		String size   = context.request().getParam("size");
-		String path   = index+"/"+type+"/_search?q="+filter+"&size="+size;
+		String path   = index+"/"+type+"/_search?size="+size;
 		
-		log.info("Request to ES : "+path);
+		JsonObject query = new JsonObject()
+			.put("query", new JsonObject()
+				.put("query_string", new JsonObject()
+					.put("analyze_wildcard", true)
+					.put("query", filter)));
+		
+		log.info("Request to ES : "+path+" : "+query.encode());
 		
 		vertx.createHttpClient(clientOptions).get(path, response -> {
 			response.bodyHandler( body -> {
@@ -75,16 +81,13 @@ public class ElasticView extends AbstractVerticle {
 					
 				}
 				context.response().end(view.toString());
-		    });
-		    response.exceptionHandler(error -> {
+		    }).exceptionHandler(error -> {
 		      context.fail(error);
 		    });
 
 		}).exceptionHandler(error -> {
 			context.fail(error);
-		}).exceptionHandler(error -> {
-			context.fail(error);
-		}).end();
+		}).end(query.encode());
 	}
 
 	private void viewAll(RoutingContext context) {
@@ -107,8 +110,7 @@ public class ElasticView extends AbstractVerticle {
 					view.put(index, types);
 				}
 				context.response().end(view.toString());
-		    });
-		    response.exceptionHandler(error -> {
+		    }).exceptionHandler(error -> {
 		      context.fail(error);
 		    });
 		}).exceptionHandler(error -> {
