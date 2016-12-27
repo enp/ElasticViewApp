@@ -9,6 +9,10 @@ form {
 label {
   font-size: 0.8em;
 }
+em {
+  font-weight: bold;
+  font-style: normal;
+}
 .group {
   display: inline-block;
 }

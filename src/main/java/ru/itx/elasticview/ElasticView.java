@@ -59,6 +59,7 @@ public class ElasticView extends AbstractVerticle {
 		String index  = context.request().getParam("index");
 		String type   = context.request().getParam("type");
 		String filter = context.request().getParam("filter");
+		String fields = context.request().getParam("fields");
 		String size   = context.request().getParam("size");
 		String path   = index+"/"+type+"/_search?size="+size;
 		
@@ -66,7 +67,13 @@ public class ElasticView extends AbstractVerticle {
 			.put("query", new JsonObject()
 				.put("query_string", new JsonObject()
 					.put("analyze_wildcard", true)
-					.put("query", filter)));
+					.put("query", filter)))
+			.put("highlight", new JsonObject()
+				.put("require_field_match", false)
+				.put("fields", new JsonObject()));
+		
+		for (String field : fields.split(","))
+			query.getJsonObject("highlight").getJsonObject("fields").put(field, new JsonObject());
 		
 		log.info("Request to ES : "+path+" : "+query.encode());
 		
@@ -77,8 +84,15 @@ public class ElasticView extends AbstractVerticle {
 				for (Object document : data.getJsonObject("hits").getJsonArray("hits")) {
 					String id = ((JsonObject)document).getString("_id");
 					JsonObject source = ((JsonObject)document).getJsonObject("_source");
-					view.put(id, source);
-					
+					for (String field : source.fieldNames()) {
+						JsonObject highlight =((JsonObject)document).getJsonObject("highlight");
+						if (highlight != null) {
+							JsonArray item = highlight.getJsonArray(field);
+							if (item != null)
+								source.put(field, item.getString(0));
+						}
+					}
+					view.put(id, source);			
 				}
 				context.response().end(view.toString());
 		    }).exceptionHandler(error -> {

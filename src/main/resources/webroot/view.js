@@ -9,7 +9,7 @@ var ElasticView = {
 		.done(function(data) { 
 			indexes = data
 			$.each(indexes, function(index) {
-				$("#index").append(new Option(index));
+				$("#index").append(new Option(index))
 			})
 			ElasticView.viewTypes()
 		})
@@ -23,7 +23,7 @@ var ElasticView = {
 		if (indexes && index) {
 			$("#type").empty();
 			$.each(indexes[index], function(type) {
-				$("#type").append(new Option(type));
+				$("#type").append(new Option(type))
 			})
 		}
 	},
@@ -33,8 +33,12 @@ var ElasticView = {
 		var type   = $("#type").val()
 		var filter = $("#filter").val()
 		var size   = $("#limit").val()
-		$("#data").empty();
-		$.ajax({ type: "GET", url: "view/"+index+"/"+type+"?filter="+filter+"&size="+size, dataType: "json" })
+		$("#data").empty()
+		$.ajax({ 
+			type: "GET", 
+			url: "view/"+index+"/"+type+"?filter="+filter+"&size="+size+"&fields="+indexes[index][type].join(), 
+			dataType: "json"
+		})
 		.done(function(data) {
 			ElasticView.documents = data
 			var table = $("<table>")
@@ -52,7 +56,10 @@ var ElasticView = {
 				    $(this).removeClass('tr-hover');
 				})
 				row.click(function(e) {
-					ElasticView.jsonview.set(ElasticView.documents[id])
+					var json = JSON.stringify(ElasticView.documents[id])
+					json = json.replace('<em>','')
+					json = json.replace('</em>','')
+					ElasticView.jsonview.set(JSON.parse(json))
 					$('#popup').bPopup({opacity:0.6})
 				})
 				$.each(indexes[index][type], function(number, column){
