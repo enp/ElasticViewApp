@@ -25,18 +25,32 @@ var ElasticView = {
 			$.each(indexes[index], function(type) {
 				$("#type").append(new Option(type))
 			})
+			ElasticView.viewSort()
+		}
+	},
+	
+	viewSort : function() {
+		var index = $("#index").val()
+		var type = $("#type").val()
+		if (indexes && index && type) {
+			$("#sort").empty();
+			$.each(indexes[index][type], function(i, sort) {
+				$("#sort").append(new Option(sort))
+			})
 		}
 	},
 	
 	view : function() {
 		var index  = $("#index").val()
 		var type   = $("#type").val()
+		var sort   = $("#sort").val()
+		var order  = $("#order").val()
 		var filter = $("#filter").val()
 		var size   = $("#limit").val()
 		$("#data").empty()
 		$.ajax({ 
 			type: "GET", 
-			url: "view/"+index+"/"+type+"?filter="+filter+"&size="+size+"&fields="+indexes[index][type].join(), 
+			url: "view/"+index+"/"+type+"?sort="+sort+"&order="+order+"&filter="+filter+"&size="+size+"&fields="+indexes[index][type].join(), 
 			dataType: "json"
 		})
 		.done(function(data) {
@@ -78,6 +92,7 @@ var ElasticView = {
 	init : function() {
 		ElasticView.jsonview = new JSONEditor($("#jsonview")[0], { search: false, mode: 'view', sortObjectKeys: true })
 		$("#index").change(ElasticView.viewTypes)
+		$("#type").change(ElasticView.viewSort)
 		$("#view").click(ElasticView.view)
 		ElasticView.viewIndexes()
 	}

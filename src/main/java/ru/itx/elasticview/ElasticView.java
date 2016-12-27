@@ -58,6 +58,8 @@ public class ElasticView extends AbstractVerticle {
 		
 		String index  = context.request().getParam("index");
 		String type   = context.request().getParam("type");
+		String sort   = context.request().getParam("sort");
+		String order  = context.request().getParam("order");
 		String filter = context.request().getParam("filter");
 		String fields = context.request().getParam("fields");
 		String size   = context.request().getParam("size");
@@ -70,7 +72,9 @@ public class ElasticView extends AbstractVerticle {
 					.put("query", filter)))
 			.put("highlight", new JsonObject()
 				.put("require_field_match", false)
-				.put("fields", new JsonObject()));
+				.put("fields", new JsonObject()))
+			.put("sort", new JsonArray()
+				.add(new JsonObject().put(sort, new JsonObject().put("order", order))));
 		
 		for (String field : fields.split(","))
 			query.getJsonObject("highlight").getJsonObject("fields").put(field, new JsonObject());
@@ -80,6 +84,12 @@ public class ElasticView extends AbstractVerticle {
 		vertx.createHttpClient(clientOptions).get(path, response -> {
 			response.bodyHandler( body -> {
 				JsonObject data = body.toJsonObject();
+				JsonObject fail = data.getJsonObject("error");
+				if (fail != null) {
+					log.error("Request to ES failed : "+fail.encodePrettily());
+					context.fail(fail.getInteger("status", 400));
+					return;
+				}
 				JsonObject view = new JsonObject();
 				for (Object document : data.getJsonObject("hits").getJsonArray("hits")) {
 					String id = ((JsonObject)document).getString("_id");
@@ -94,7 +104,7 @@ public class ElasticView extends AbstractVerticle {
 					}
 					view.put(id, source);			
 				}
-				context.response().end(view.toString());
+				context.response().end(view.encode());
 		    }).exceptionHandler(error -> {
 		      context.fail(error);
 		    });
@@ -123,7 +133,7 @@ public class ElasticView extends AbstractVerticle {
 					}
 					view.put(index, types);
 				}
-				context.response().end(view.toString());
+				context.response().end(view.encode());
 		    }).exceptionHandler(error -> {
 		      context.fail(error);
 		    });
