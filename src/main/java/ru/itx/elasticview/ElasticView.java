@@ -63,7 +63,8 @@ public class ElasticView extends AbstractVerticle {
 		String filter = context.request().getParam("filter");
 		String fields = context.request().getParam("fields");
 		String size   = context.request().getParam("size");
-		String path   = index+"/"+type+"/_search?size="+size;
+		
+		String path   = index+"/"+type+"/_search";
 		
 		JsonObject query = new JsonObject()
 			.put("query", new JsonObject()
@@ -74,7 +75,8 @@ public class ElasticView extends AbstractVerticle {
 				.put("require_field_match", false)
 				.put("fields", new JsonObject()))
 			.put("sort", new JsonArray()
-				.add(new JsonObject().put(sort, new JsonObject().put("order", order))));
+				.add(new JsonObject().put(sort+".keyword", new JsonObject().put("order", order))))
+			.put("size",size);
 		
 		for (String field : fields.split(","))
 			query.getJsonObject("highlight").getJsonObject("fields").put(field, new JsonObject());
@@ -90,19 +92,18 @@ public class ElasticView extends AbstractVerticle {
 					context.fail(fail.getInteger("status", 400));
 					return;
 				}
-				JsonObject view = new JsonObject();
+				JsonArray view = new JsonArray();
 				for (Object document : data.getJsonObject("hits").getJsonArray("hits")) {
-					String id = ((JsonObject)document).getString("_id");
-					JsonObject source = ((JsonObject)document).getJsonObject("_source");
-					for (String field : source.fieldNames()) {
-						JsonObject highlight =((JsonObject)document).getJsonObject("highlight");
-						if (highlight != null) {
+					JsonObject source    = ((JsonObject)document).getJsonObject("_source");
+					JsonObject highlight = ((JsonObject)document).getJsonObject("highlight");
+					if (highlight != null) {
+						for (String field : source.fieldNames()) {		
 							JsonArray item = highlight.getJsonArray(field);
 							if (item != null)
 								source.put(field, item.getString(0));
 						}
 					}
-					view.put(id, source);			
+					view.add(source);			
 				}
 				context.response().end(view.encode());
 		    }).exceptionHandler(error -> {
