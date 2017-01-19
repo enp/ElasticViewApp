@@ -1,0 +1,14 @@
+{
+  "server": {
+    "host" : "127.0.0.1",
+    "port" : 8200,
+    "prefix" : ""
+  },
+  "client": {
+    "host" : "127.0.0.1",
+    "port" : 9200
+  },
+  "view": {
+    "showHiddenIndexes": true
+  }
+}
