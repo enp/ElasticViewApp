@@ -1,9 +1,10 @@
 var ElasticView = {
 		
 	indexes   : {},
-	documents : {},	
 	jsonview  : {},
 	
+	//documents : {},	
+
 	viewIndexes : function() {
 		$.ajax({ type: "GET", url: "view", dataType: "json" })
 		.done(function(data) { 
@@ -40,7 +41,7 @@ var ElasticView = {
 		}
 	},
 	
-	view : function() {
+	viewDocuments : function() {
 		var index  = $("#index").val()
 		var type   = $("#type").val()
 		var sort   = $("#sort").val()
@@ -54,7 +55,7 @@ var ElasticView = {
 			dataType: "json"
 		})
 		.done(function(data) {
-			ElasticView.documents = data
+			//ElasticView.documents = data
 			var table = $("<table>")
 			var head = $("<tr>")
 			$.each(indexes[index][type], function(number, column){
@@ -62,7 +63,9 @@ var ElasticView = {
 			})
 			table.append(head)
 			table.addClass("documents")
-			$.each(ElasticView.documents, function(id, document){
+			$.each(data, function(id, document){
+				id = document[0]
+				document = document[1]
 				var row = $("<tr>")
 				row.hover(function() {
 					$(this).addClass('tr-hover');
@@ -70,11 +73,7 @@ var ElasticView = {
 				    $(this).removeClass('tr-hover');
 				})
 				row.click(function(e) {
-					var json = JSON.stringify(ElasticView.documents[id])
-					json = json.replace('<em>','')
-					json = json.replace('</em>','')
-					ElasticView.jsonview.set(JSON.parse(json))
-					$('#popup').bPopup({opacity:0.6})
+					ElasticView.viewDocument(id)
 				})
 				$.each(indexes[index][type], function(number, column){
 					var cell = (document[column] == undefined) ? '' : document[column]
@@ -88,12 +87,44 @@ var ElasticView = {
 			alert(errorThrown)
 		})
 	},
-		
+	
+	viewDocument : function(id) {
+		var index = $("#index").val()
+		var type  = $("#type").val()
+		$.ajax({ 
+			type: "GET", 
+			url: "view/"+index+"/"+type+"/"+id, 
+			dataType: "json"
+		})
+		.done(function(data) {
+			$("#document_id").val(id)
+			ElasticView.jsonview.set(data)
+			$('#popup').bPopup({opacity:0.6})
+		})
+	},
+	
+	updateDocument : function() {
+		var index = $("#index").val()
+		var type  = $("#type").val()
+		var id    = $("#document_id").val()
+		$.ajax({ 
+			type: "PUT", 
+			url: "view/"+index+"/"+type+"/"+id, 
+			dataType: "json",
+			data: ElasticView.jsonview.getText()
+		})
+		.done(function(data) {
+			$('#popup').bPopup().close()
+			ElasticView.viewDocuments()
+		})		
+	},
+	
 	init : function() {
-		ElasticView.jsonview = new JSONEditor($("#jsonview")[0], { search: false, mode: 'view', sortObjectKeys: true })
+		ElasticView.jsonview = new JSONEditor($("#jsonview")[0], { search: false, sortObjectKeys: true })
 		$("#index").change(ElasticView.viewTypes)
 		$("#type").change(ElasticView.viewSort)
-		$("#view").click(ElasticView.view)
+		$("#view").click(ElasticView.viewDocuments)
+		$("#update").click(ElasticView.updateDocument)
 		ElasticView.viewIndexes()
 	}
 }

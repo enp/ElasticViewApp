@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -14,6 +15,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 public class ElasticView extends AbstractVerticle {
@@ -40,7 +42,12 @@ public class ElasticView extends AbstractVerticle {
 	public void start(Future<Void> future) throws Exception {
 
 		Router router = Router.router(vertx);
-		router.route(prefix+"/view/:index/:type").handler(this::view);
+		
+		router.route().handler(BodyHandler.create());
+		
+		router.route(HttpMethod.PUT,prefix+"/view/:index/:type/:id").handler(this::updateDocument);
+		router.route(prefix+"/view/:index/:type/:id").handler(this::viewDocument);
+		router.route(prefix+"/view/:index/:type").handler(this::viewIndex);
 		router.route(prefix+"/view").handler(this::viewAll);
 		router.route(prefix+"/*").handler(StaticHandler.create().setCachingEnabled(false));
 
@@ -53,8 +60,43 @@ public class ElasticView extends AbstractVerticle {
 			}
 		});
 	}
+	
+	private void updateDocument(RoutingContext context) {
+		
+		String index  = context.request().getParam("index");
+		String type   = context.request().getParam("type");
+		String id     = context.request().getParam("id");
+		
+		vertx.createHttpClient(clientOptions).put("/"+index+"/"+type+"/"+id+"?refresh=wait_for", response -> {
+			response.bodyHandler( body -> {
+				context.response().end(body);
+		    }).exceptionHandler(error -> {
+		      context.fail(error);
+		    });
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).end(context.getBody());
+	}
+	
+	private void viewDocument(RoutingContext context) {
+		
+		String index  = context.request().getParam("index");
+		String type   = context.request().getParam("type");
+		String id     = context.request().getParam("id");
+		
+		vertx.createHttpClient(clientOptions).get("/"+index+"/"+type+"/"+id+"/_source", response -> {
+			response.bodyHandler( body -> {
+				JsonObject document = body.toJsonObject();
+				context.response().end(document.encode());
+		    }).exceptionHandler(error -> {
+		      context.fail(error);
+		    });
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).end();
+	}
 
-	private void view(RoutingContext context) {
+	private void viewIndex(RoutingContext context) {
 		
 		String index  = context.request().getParam("index");
 		String type   = context.request().getParam("type");
@@ -94,6 +136,7 @@ public class ElasticView extends AbstractVerticle {
 				}
 				JsonArray view = new JsonArray();
 				for (Object document : data.getJsonObject("hits").getJsonArray("hits")) {
+					String     id        = ((JsonObject)document).getString("_id");
 					JsonObject source    = ((JsonObject)document).getJsonObject("_source");
 					JsonObject highlight = ((JsonObject)document).getJsonObject("highlight");
 					if (highlight != null) {
@@ -103,7 +146,7 @@ public class ElasticView extends AbstractVerticle {
 								source.put(field, item.getString(0));
 						}
 					}
-					view.add(source);			
+					view.add(new JsonArray().add(id).add(source));
 				}
 				context.response().end(view.encode());
 		    }).exceptionHandler(error -> {
