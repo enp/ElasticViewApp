@@ -1,7 +1,10 @@
-body {
+body, select, input, button {
+  font-family: droid sans mono,consolas,monospace,courier new,courier,sans-serif;
+}
+/*body {
   font-family: Verdana;
   background-color: #FFFFFF;
-}
+}*/
 form {
   margin: 0 auto;
   width: 900px;
@@ -12,6 +15,7 @@ label {
 em {
   font-weight: bold;
   font-style: normal;
+  background-color: #3883fa;
 }
 .group {
   display: inline-block;
@@ -51,6 +55,6 @@ em {
   color:#000;
   display:none; 
   padding:20px;
-  min-width:700px;
-  min-height: 100px;
+  min-width:800px;
+  min-height:100px;
 }

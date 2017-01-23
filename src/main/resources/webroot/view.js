@@ -93,7 +93,7 @@ var ElasticView = {
 		var type  = $("#type").val()
 		$.ajax({ 
 			type: "GET", 
-			url: "view/"+index+"/"+type+"/"+id, 
+			url: "view/"+index+"/"+type+"/"+encodeURIComponent(id), 
 			dataType: "json"
 		})
 		.done(function(data) {
@@ -109,7 +109,7 @@ var ElasticView = {
 		var id    = $("#document_id").val()
 		$.ajax({ 
 			type: "PUT", 
-			url: "view/"+index+"/"+type+"/"+id, 
+			url: "view/"+index+"/"+type+"/"+encodeURIComponent(id), 
 			dataType: "json",
 			data: ElasticView.jsonview.getText()
 		})

@@ -1,6 +1,8 @@
 package ru.itx.elasticview;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -67,6 +69,8 @@ public class ElasticView extends AbstractVerticle {
 		String type   = context.request().getParam("type");
 		String id     = context.request().getParam("id");
 		
+		try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
+		
 		vertx.createHttpClient(clientOptions).put("/"+index+"/"+type+"/"+id+"?refresh=wait_for", response -> {
 			response.bodyHandler( body -> {
 				context.response().end(body);
@@ -83,6 +87,8 @@ public class ElasticView extends AbstractVerticle {
 		String index  = context.request().getParam("index");
 		String type   = context.request().getParam("type");
 		String id     = context.request().getParam("id");
+		
+		try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
 		
 		vertx.createHttpClient(clientOptions).get("/"+index+"/"+type+"/"+id+"/_source", response -> {
 			response.bodyHandler( body -> {
