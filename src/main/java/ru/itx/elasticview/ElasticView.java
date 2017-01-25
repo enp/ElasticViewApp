@@ -5,6 +5,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.stream.Collectors;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -17,6 +18,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BasicAuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
@@ -27,6 +29,8 @@ public class ElasticView extends AbstractVerticle {
 	
 	private String prefix;
 	private Boolean showHiddenIndexes;
+	
+	private ElasticAuth elasticAuth = new ElasticAuth();
 	
 	private Logger log = LoggerFactory.getLogger(ElasticView.class.getName());
 	
@@ -42,8 +46,24 @@ public class ElasticView extends AbstractVerticle {
 	}
 
 	public void start(Future<Void> future) throws Exception {
+		
+		vertx.createHttpClient(clientOptions).get("/.elasticview/user/_search?size=1000", response -> {
+			response.bodyHandler( body -> {
+				elasticAuth.setUsers(
+					body.toJsonObject().getJsonObject("hits").getJsonArray("hits")
+					.stream().map(hit -> ((JsonObject)hit).getJsonObject("_source")).collect(Collectors.toList())
+				);
+				log.info("Elastic View users are loaded");
+		    }).exceptionHandler(error -> {
+		      log.error("Users loading error : "+error.getMessage());
+		    });
+		}).exceptionHandler(error -> {
+			log.error("Users loading error : "+error.getMessage());
+		}).end();
 
 		Router router = Router.router(vertx);
+		
+		router.route("/*").handler(BasicAuthHandler.create(elasticAuth));
 		
 		router.route().handler(BodyHandler.create());
 		
@@ -56,7 +76,7 @@ public class ElasticView extends AbstractVerticle {
 
 		vertx.createHttpServer(serverOptions).requestHandler(router::accept).listen(result -> {
 			if (result.succeeded()) {
-				log.info("Elastic View application stared");
+				log.info("Application stared");
 				future.complete();
 			} else {
 				future.fail(result.cause());
@@ -156,6 +176,10 @@ public class ElasticView extends AbstractVerticle {
 							if (item != null)
 								source.put(field, item.getString(0));
 						}
+					}
+					for (String field : source.fieldNames()) {		
+						if (field.equals("password"))
+							source.put(field, "***");
 					}
 					view.add(new JsonArray().add(id).add(source));
 				}

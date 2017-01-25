@@ -2,8 +2,6 @@ var ElasticView = {
 		
 	indexes   : {},
 	jsonview  : {},
-	
-	//documents : {},	
 
 	viewIndexes : function() {
 		$.ajax({ type: "GET", url: "view", dataType: "json" })
