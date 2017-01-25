@@ -55,7 +55,6 @@ var ElasticView = {
 			dataType: "json"
 		})
 		.done(function(data) {
-			//ElasticView.documents = data
 			var table = $("<table>")
 			var head = $("<tr>")
 			$.each(indexes[index][type], function(number, column){
@@ -99,6 +98,7 @@ var ElasticView = {
 		.done(function(data) {
 			$("#document_id").val(id)
 			ElasticView.jsonview.set(data)
+			$('#update').prop('disabled', true);
 			$('#popup').bPopup({opacity:0.6})
 		})
 	},
@@ -120,7 +120,11 @@ var ElasticView = {
 	},
 	
 	init : function() {
-		ElasticView.jsonview = new JSONEditor($("#jsonview")[0], { search: false, sortObjectKeys: true })
+		ElasticView.jsonview = new JSONEditor($("#jsonview")[0], { 
+			search: false, sortObjectKeys: true, onChange: function(){
+				$('#update').prop('disabled', false);
+			}
+		})
 		$("#index").change(ElasticView.viewTypes)
 		$("#type").change(ElasticView.viewSort)
 		$("#view").click(ElasticView.viewDocuments)
