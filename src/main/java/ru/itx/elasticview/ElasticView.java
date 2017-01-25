@@ -48,6 +48,7 @@ public class ElasticView extends AbstractVerticle {
 		router.route().handler(BodyHandler.create());
 		
 		router.route(HttpMethod.PUT,prefix+"/view/:index/:type/:id").handler(this::updateDocument);
+		router.route(HttpMethod.PUT,prefix+"/view/:index/:type/").handler(this::updateDocument);
 		router.route(prefix+"/view/:index/:type/:id").handler(this::viewDocument);
 		router.route(prefix+"/view/:index/:type").handler(this::viewIndex);
 		router.route(prefix+"/view").handler(this::viewAll);
@@ -69,9 +70,13 @@ public class ElasticView extends AbstractVerticle {
 		String type   = context.request().getParam("type");
 		String id     = context.request().getParam("id");
 		
-		try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
+		if (id == null) {
+			id = "";
+		} else {
+			try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
+		}
 		
-		vertx.createHttpClient(clientOptions).put("/"+index+"/"+type+"/"+id+"?refresh=wait_for", response -> {
+		vertx.createHttpClient(clientOptions).post("/"+index+"/"+type+"/"+id+"?refresh=wait_for", response -> {
 			response.bodyHandler( body -> {
 				context.response().end(body);
 		    }).exceptionHandler(error -> {
