@@ -8,6 +8,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.auth.AbstractUser;
 import io.vertx.ext.auth.AuthProvider;
 import io.vertx.ext.auth.User;
 
@@ -15,6 +16,28 @@ public class ElasticAuth implements AuthProvider {
 
 private Logger log = LoggerFactory.getLogger(ElasticAuth.class.getName());
 	
+private class ElasticUser extends AbstractUser {
+
+	private JsonObject principal;
+		
+		public ElasticUser(JsonObject principal) {
+			this.principal = principal;
+		}
+	
+		public JsonObject principal() {
+			return principal;
+		}
+	
+		public void setAuthProvider(AuthProvider authProvider) {
+			throw new RuntimeException("Not implemented");
+		}
+	
+		protected void doIsPermitted(String permission, Handler<AsyncResult<Boolean>> resultHandler) {
+			resultHandler.handle(Future.succeededFuture(true));
+		}
+		
+	}
+
 	private List<JsonObject> users;
 
 	public void authenticate(JsonObject info, Handler<AsyncResult<User>> handler) {
@@ -23,7 +46,7 @@ private Logger log = LoggerFactory.getLogger(ElasticAuth.class.getName());
 				if (user.getString("login").equals(info.getValue("username")) && 
 					user.getString("password").equals(info.getValue("password"))) {
 					log.info("User ["+info.getValue("username")+"] authenticated");
-					handler.handle(Future.succeededFuture());
+					handler.handle(Future.succeededFuture(new ElasticUser(info.mergeIn(user))));
 					return;
 				}
 			}

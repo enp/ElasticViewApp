@@ -1,7 +1,8 @@
 var ElasticView = {
 		
-	indexes   : {},
-	jsonview  : {},
+	indexes     : {},
+	jsonview    : {},
+	document_id : null,
 
 	viewIndexes : function() {
 		$.ajax({ type: "GET", url: "view", dataType: "json" })
@@ -33,7 +34,7 @@ var ElasticView = {
 		var type = $("#type").val()
 		if (indexes && index && type) {
 			$("#sort").empty();
-			$.each(indexes[index][type], function(i, sort) {
+			$.each(indexes[index][type].fields, function(i, sort) {
 				$("#sort").append(new Option(sort))
 			})
 		}
@@ -49,13 +50,13 @@ var ElasticView = {
 		$("#data").empty()
 		$.ajax({ 
 			type: "GET", 
-			url: "view/"+index+"/"+type+"?sort="+sort+"&order="+order+"&filter="+filter+"&size="+size+"&fields="+indexes[index][type].join(), 
+			url: "view/"+index+"/"+type+"?sort="+sort+"&order="+order+"&filter="+filter+"&size="+size+"&fields="+indexes[index][type].fields.join(), 
 			dataType: "json"
 		})
 		.done(function(data) {
 			var table = $("<table>")
 			var head = $("<tr>")
-			$.each(indexes[index][type], function(number, column){
+			$.each(indexes[index][type].fields, function(number, column){
 				head.append("<th class='head'>"+column+"</th>")
 			})
 			table.append(head)
@@ -65,15 +66,15 @@ var ElasticView = {
 				document = document[1]
 				var row = $("<tr>")
 				row.hover(function() {
-					$(this).addClass('tr-hover');
+					$(this).addClass("tr-hover");
 				}, function() {
-				    $(this).removeClass('tr-hover');
+				    $(this).removeClass("tr-hover");
 				})
 				row.click(function(e) {
 					ElasticView.viewDocument(id)
 				})
-				$.each(indexes[index][type], function(number, column){
-					var cell = (document[column] == undefined) ? '' : document[column]
+				$.each(indexes[index][type].fields, function(number, column){
+					var cell = (document[column] == undefined) ? "" : document[column]
 					row.append("<td class='cell'>"+cell+"</td>")
 				})
 				table.append(row)
@@ -93,26 +94,39 @@ var ElasticView = {
 			url: "view/"+index+"/"+type+"/"+encodeURIComponent(id), 
 			dataType: "json"
 		})
-		.done(function(data) {
-			$("#document_id").val(id)
+		.done(function(data) {			
+			ElasticView.jsonview.setName(type+" ("+id+")")
 			ElasticView.jsonview.set(data)
-			$('#update').prop('disabled', true);
-			$('#popup').bPopup({opacity:0.6})
+			document_id = id
+			$("#edit").empty()
+			if (indexes[index][type].edit) {
+				ElasticView.jsonview.setMode("tree")
+				$("#edit").append("<br>")
+				$("#edit").append("<button class='edit' id='save' style='float: right; margin-left: 5px;' disabled>Save</button>")
+				$("#edit").append("<button class='edit' id='copy' style='float: right; margin-left: 5px;' disabled>Copy</button>");
+				$("#edit").append("<button class='edit' id='delete' style='float: right;'>Delete</button>");
+				$(".edit").click(ElasticView.updateDocument)
+			} else {
+				ElasticView.jsonview.setMode("view")
+			}
+			$("#popup").bPopup({opacity:0.6})
 		})
 	},
 	
 	updateDocument : function() {
-		var index = $("#index").val()
-		var type  = $("#type").val()
-		var id    = $("#document_id").val()
+		var index  = $("#index").val()
+		var type   = $("#type").val()
+		var method = this.id == 'delete' ? 'DELETE' : 'POST'
+		var id     = this.id == 'copy' ? '' : encodeURIComponent(document_id)
+		var data   = this.id == 'delete' ? '' : ElasticView.jsonview.getText()
 		$.ajax({ 
-			type: "PUT", 
-			url: "view/"+index+"/"+type+"/"+encodeURIComponent(id), 
+			type: method, 
+			url: "view/"+index+"/"+type+"/"+id, 
 			dataType: "json",
-			data: ElasticView.jsonview.getText()
+			data: data
 		})
 		.done(function(data) {
-			$('#popup').bPopup().close()
+			$("#popup").bPopup().close()
 			ElasticView.viewDocuments()
 		})		
 	},
@@ -120,13 +134,13 @@ var ElasticView = {
 	init : function() {
 		ElasticView.jsonview = new JSONEditor($("#jsonview")[0], { 
 			search: false, sortObjectKeys: true, onChange: function(){
-				$('#update').prop('disabled', false);
+				$("#save").prop("disabled", false)
+				$("#copy").prop("disabled", false)
 			}
 		})
 		$("#index").change(ElasticView.viewTypes)
 		$("#type").change(ElasticView.viewSort)
 		$("#view").click(ElasticView.viewDocuments)
-		$("#update").click(ElasticView.updateDocument)
 		ElasticView.viewIndexes()
 	}
 }
