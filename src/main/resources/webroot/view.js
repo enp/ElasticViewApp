@@ -2,6 +2,7 @@ var ElasticView = {
 		
 	indexes     : {},
 	jsonview    : {},
+	
 	document_id : null,
 
 	viewIndexes : function() {
@@ -13,8 +14,8 @@ var ElasticView = {
 			})
 			ElasticView.viewTypes()
 		})
-		.fail(function(jqXHR, textStatus, errorThrown ) {
-			alert(errorThrown)
+		.fail(function(data) {
+			alert(data.responseText);
 		})
 	},
 	
@@ -81,8 +82,8 @@ var ElasticView = {
 			})
 			$("#data").append(table)
 		})
-		.fail(function(jqXHR, textStatus, errorThrown ) {
-			alert(errorThrown)
+		.fail(function(data) {
+			alert(data.responseText);
 		})
 	},
 	
@@ -111,6 +112,9 @@ var ElasticView = {
 			}
 			$("#popup").bPopup({opacity:0.6})
 		})
+		.fail(function(data) {
+			alert(data.responseText);
+		})
 	},
 	
 	updateDocument : function() {
@@ -126,9 +130,14 @@ var ElasticView = {
 			data: data
 		})
 		.done(function(data) {
-			$("#popup").bPopup().close()
 			ElasticView.viewDocuments()
-		})		
+		})
+		.fail(function(data) {
+			alert(data.responseText);
+		})
+		.always(function(data) {
+			$("#popup").bPopup().close()
+		})
 	},
 	
 	init : function() {

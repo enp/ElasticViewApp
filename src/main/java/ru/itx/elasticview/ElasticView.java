@@ -5,7 +5,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.stream.Collectors;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -28,10 +27,9 @@ public class ElasticView extends AbstractVerticle {
 	private HttpClientOptions clientOptions = new HttpClientOptions();
 	
 	private String prefix;
+	
 	private Boolean showHiddenIndexes;
 	private Boolean accessControl;
-	
-	private ElasticAuth elasticAuth = new ElasticAuth();
 	
 	private Logger log = LoggerFactory.getLogger(ElasticView.class.getName());
 	
@@ -49,32 +47,36 @@ public class ElasticView extends AbstractVerticle {
 
 	public void start(Future<Void> future) throws Exception {
 		
-		vertx.createHttpClient(clientOptions).get("/.elasticview/user/_search?size=1000", response -> {
-			response.bodyHandler( body -> {
-				elasticAuth.setUsers(
-					body.toJsonObject().getJsonObject("hits").getJsonArray("hits")
-					.stream().map(hit -> ((JsonObject)hit).getJsonObject("_source")).collect(Collectors.toList())
-				);
-				log.info("Elastic View users are loaded");
-		    }).exceptionHandler(error -> {
-		      log.error("Users loading error : "+error.getMessage());
-		    });
-		}).exceptionHandler(error -> {
-			log.error("Users loading error : "+error.getMessage());
-		}).end();
-
 		Router router = Router.router(vertx);
 		
-		router.route("/*").handler(BasicAuthHandler.create(elasticAuth));
+		if (accessControl) {
+			ElasticAuth elasticAuth = new ElasticAuth(prefix);
+			router.route(prefix+"/view*").handler(BasicAuthHandler.create(elasticAuth));
+			router.route(prefix+"/view*").handler(elasticAuth::checkAccess);
+			vertx.createHttpClient(clientOptions).get("/.elasticview/_search?size=1000", response -> {
+				response.bodyHandler( body -> {
+					elasticAuth.load(body.toJsonObject().getJsonObject("hits"));
+			    }).exceptionHandler(error -> {
+			      log.error("Users/groups read error : "+error.getMessage());
+			    });
+			}).exceptionHandler(error -> {
+				log.error("Users/groups request error : "+error.getMessage());
+			}).end();
+		} else {
+			log.info("accessControl is disabled");
+		}
 		
 		router.route().handler(BodyHandler.create());
 		
 		router.route(HttpMethod.DELETE,prefix+"/view/:index/:type/:id").handler(this::updateDocument);
 		router.route(HttpMethod.POST,prefix+"/view/:index/:type/:id").handler(this::updateDocument);
 		router.route(HttpMethod.POST,prefix+"/view/:index/:type/").handler(this::updateDocument);
+		
 		router.route(prefix+"/view/:index/:type/:id").handler(this::viewDocument);
 		router.route(prefix+"/view/:index/:type").handler(this::viewIndex);
+		
 		router.route(prefix+"/view").handler(this::viewAll);
+		
 		router.route(prefix+"/*").handler(StaticHandler.create().setCachingEnabled(false));
 
 		vertx.createHttpServer(serverOptions).requestHandler(router::accept).listen(result -> {
@@ -89,190 +91,153 @@ public class ElasticView extends AbstractVerticle {
 	
 	private void updateDocument(RoutingContext context) {
 		
-		String index  = context.request().getParam("index");
-		String type   = context.request().getParam("type");
-		
-		JsonObject principal = context.user().principal();
-		
-		if (accessControl || !principal.getBoolean("fullAccess")) {
+		String index = context.request().getParam("index");
+		String type  = context.request().getParam("type");		
+		String id    = context.request().getParam("id");
 			
-			if (!principal.getJsonObject("indexes").getJsonObject(index).getJsonObject(type).getBoolean("edit")) {
-				context.fail(new Exception("Access not allowed"));
-			}
-			
+		if (id == null) {
+			id = "";
 		} else {
-			
-			String id = context.request().getParam("id");
-			
-			if (id == null) {
-				id = "";
-			} else {
-				try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
-			}
-			
-			HttpMethod method = context.request().method();
-			
-			vertx.createHttpClient(clientOptions).request(method, "/"+index+"/"+type+"/"+id+"?refresh=wait_for", response -> {
-				response.bodyHandler( body -> {
-					context.response().end(body);
-			    }).exceptionHandler(error -> {
-			      context.fail(error);
-			    });
+			try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
+		}
+
+		HttpMethod method = context.request().method();
+
+		vertx.createHttpClient(clientOptions).request(method, "/"+index+"/"+type+"/"+id+"?refresh=wait_for", response -> {
+			response.bodyHandler( body -> {
+				context.response().end(body);
 			}).exceptionHandler(error -> {
 				context.fail(error);
-			}).end(context.getBody());
-		}		
+			});
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).end(context.getBody());	
 	}
 	
 	private void viewDocument(RoutingContext context) {
 		
-		String index  = context.request().getParam("index");
-		String type   = context.request().getParam("type");
-		
-		JsonObject principal = context.user().principal();
-		
-		if (accessControl || !principal.getBoolean("fullAccess")) {
-			
-			if (principal.getJsonObject("indexes").getJsonObject(index).getJsonObject(type) != null) {
-				context.fail(new Exception("Access not allowed"));
-			}
-			
-		} else {
-		
-			String id     = context.request().getParam("id");
-			
-			try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
-			
-			vertx.createHttpClient(clientOptions).get("/"+index+"/"+type+"/"+id+"/_source", response -> {
-				response.bodyHandler( body -> {
-					JsonObject document = body.toJsonObject();
-					context.response().end(document.encode());
-			    }).exceptionHandler(error -> {
-			      context.fail(error);
-			    });
+		String index = context.request().getParam("index");
+		String type  = context.request().getParam("type");		
+		String id    = context.request().getParam("id");
+
+		try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
+
+		vertx.createHttpClient(clientOptions).get("/"+index+"/"+type+"/"+id+"/_source", response -> {
+			response.bodyHandler( body -> {
+				JsonObject document = body.toJsonObject();
+				context.response().end(document.encode());
 			}).exceptionHandler(error -> {
 				context.fail(error);
-			}).end();
-		}
+			});
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).end();		
 	}
 
 	private void viewIndex(RoutingContext context) {
 		
-		String index  = context.request().getParam("index");
-		String type   = context.request().getParam("type");
+		String filter = context.request().getParam("filter");
 		
-		JsonObject principal = context.user().principal();
+		String fields = context.request().getParam("fields");
 		
-		if (accessControl || !principal.getBoolean("fullAccess")) {
-			
-			if (principal.getJsonObject("indexes").getJsonObject(index).getJsonObject(type) != null) {
-				context.fail(new Exception("Access not allowed"));
-			}
-			
-		} else {
+		String sort   = context.request().getParam("sort");
+		String order  = context.request().getParam("order");
 		
-			String sort   = context.request().getParam("sort");
-			String order  = context.request().getParam("order");
-			String filter = context.request().getParam("filter");
-			String fields = context.request().getParam("fields");
-			String size   = context.request().getParam("size");
-			
-			String path   = index+"/"+type+"/_search";
-			
-			JsonObject query = new JsonObject()
-				.put("query", new JsonObject()
-					.put("query_string", new JsonObject()
-						.put("analyze_wildcard", true)
-						.put("query", filter)))
-				.put("highlight", new JsonObject()
-					.put("require_field_match", false)
-					.put("fields", new JsonObject()))
-				.put("sort", new JsonArray()
-					.add(new JsonObject().put(sort+".keyword", new JsonObject().put("order", order))))
-				.put("size",size);
-			
+		String size   = context.request().getParam("size");
+		
+		if (filter == null) filter = "*";
+
+		JsonObject query = new JsonObject()
+			.put("query", new JsonObject()
+				.put("query_string", new JsonObject()
+					.put("analyze_wildcard", true)
+					.put("query", filter)))
+			.put("highlight", new JsonObject()
+				.put("require_field_match", false)
+				.put("fields", new JsonObject()));
+		
+		if (fields != null)
 			for (String field : fields.split(","))
 				query.getJsonObject("highlight").getJsonObject("fields").put(field, new JsonObject());
 			
-			log.info("Request to ES : "+path+" : "+query.encode());
-			
-			vertx.createHttpClient(clientOptions).get(path, response -> {
-				response.bodyHandler( body -> {
-					JsonObject data = body.toJsonObject();
-					JsonObject fail = data.getJsonObject("error");
-					if (fail != null) {
-						log.error("Request to ES failed : "+fail.encodePrettily());
-						context.fail(fail.getInteger("status", 400));
-						return;
-					}
-					JsonArray view = new JsonArray();
-					for (Object document : data.getJsonObject("hits").getJsonArray("hits")) {
-						String     id        = ((JsonObject)document).getString("_id");
-						JsonObject source    = ((JsonObject)document).getJsonObject("_source");
-						JsonObject highlight = ((JsonObject)document).getJsonObject("highlight");
-						if (highlight != null) {
-							for (String field : source.fieldNames()) {		
-								JsonArray item = highlight.getJsonArray(field);
-								if (item != null)
-									source.put(field, item.getString(0));
-							}
-						}
+		if (sort != null && order != null)
+			query.put("sort", new JsonArray()
+				.add(new JsonObject().put(sort+".keyword", new JsonObject().put("order", order))));
+		
+		if (size != null)
+			query.put("size",size);
+
+
+		String index  = context.request().getParam("index");
+		String type   = context.request().getParam("type");
+		String path   = index+"/"+type+"/_search";
+
+		log.info("Request to ES : "+path+" : "+query.encode());
+
+		vertx.createHttpClient(clientOptions).get(path, response -> {
+			response.bodyHandler( body -> {
+				JsonObject data = body.toJsonObject();
+				JsonObject fail = data.getJsonObject("error");
+				if (fail != null) {
+					log.error("Request to ES failed : "+fail.encodePrettily());
+					context.fail(fail.getInteger("status", 400));
+					return;
+				}
+				JsonArray view = new JsonArray();
+				for (Object document : data.getJsonObject("hits").getJsonArray("hits")) {
+					String     id        = ((JsonObject)document).getString("_id");
+					JsonObject source    = ((JsonObject)document).getJsonObject("_source");
+					JsonObject highlight = ((JsonObject)document).getJsonObject("highlight");
+					if (highlight != null) {
 						for (String field : source.fieldNames()) {		
-							if (field.equals("password"))
-								source.put(field, "***");
+							JsonArray item = highlight.getJsonArray(field);
+							if (item != null)
+								source.put(field, item.getString(0));
 						}
-						view.add(new JsonArray().add(id).add(source));
 					}
-					context.response().end(view.encode());
-			    }).exceptionHandler(error -> {
-			      context.fail(error);
-			    });
-	
+					for (String field : source.fieldNames()) {		
+						if (field.equals("password"))
+							source.put(field, "***");
+					}
+					view.add(new JsonArray().add(id).add(source));
+				}
+				context.response().end(view.encode());
 			}).exceptionHandler(error -> {
 				context.fail(error);
-			}).end(query.encode());
-		
-		}
+			});
+
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).end(query.encode());
 	}
 
 	private void viewAll(RoutingContext context) {
 		
-		JsonObject principal = context.user().principal();
-		
-		if (accessControl || !principal.getBoolean("fullAccess")) {
-			
-			context.response().end(principal.getJsonObject("indexes").encode());
-			
-		} else {
-		
-			vertx.createHttpClient(clientOptions).get("/_all/_mapping", response -> {
-				response.bodyHandler( body -> {
-					JsonObject data = body.toJsonObject();
-					JsonObject view = new JsonObject();
-					for (String indexName : data.fieldNames()) {
-						if (!showHiddenIndexes && indexName.startsWith(".")) continue;
-						log.info("USER : "+context.user().principal());
-						JsonObject types = new JsonObject();
-						for (String typeName : data.getJsonObject(indexName).getJsonObject("mappings").fieldNames()) {
-							JsonArray fields = new JsonArray();
-							JsonObject properties = data.getJsonObject(indexName).getJsonObject("mappings").getJsonObject(typeName).getJsonObject("properties");
-							for (String field : properties.fieldNames()) {
-								if (properties.getJsonObject(field).containsKey("type"))
-									fields.add(field);
-							}
-							types.put(typeName, new JsonObject().put("fields", fields).put("edit", true));
+		vertx.createHttpClient(clientOptions).get("/_all/_mapping", response -> {
+			response.bodyHandler( body -> {
+				JsonObject data = body.toJsonObject();
+				JsonObject view = new JsonObject();
+				for (String indexName : data.fieldNames()) {
+					if (!showHiddenIndexes && indexName.startsWith(".")) continue;
+					JsonObject types = new JsonObject();
+					for (String typeName : data.getJsonObject(indexName).getJsonObject("mappings").fieldNames()) {
+						JsonArray fields = new JsonArray();
+						JsonObject properties = data.getJsonObject(indexName).getJsonObject("mappings").getJsonObject(typeName).getJsonObject("properties");
+						for (String field : properties.fieldNames()) {
+							if (properties.getJsonObject(field).containsKey("type"))
+								fields.add(field);
 						}
-						view.put(indexName, types);
+						types.put(typeName, new JsonObject().put("fields", fields).put("edit", true));
 					}
-					context.response().end(view.encode());
-			    }).exceptionHandler(error -> {
-			      context.fail(error);
-			    });
+					view.put(indexName, types);
+				}
+				context.response().end(view.encode());
 			}).exceptionHandler(error -> {
 				context.fail(error);
-			}).end();
-		
-		}
+			});
+		}).exceptionHandler(error -> {
+			context.fail(error);
+		}).end();		
 	}
 	
 }
