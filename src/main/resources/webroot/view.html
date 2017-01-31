@@ -11,7 +11,9 @@
   <link rel="stylesheet" href="view.css">
 </head>
 <body>
-<form>
+  <div id="top"><label><b>ElasticView</b> :: </label><label id="auth">not logged</label><button id="login" type="button">Login</button></div>
+  <br><br>
+  <form id="query">
     <div class="group">
       <label for="index">Index</label><br/>
       <select id="index">
@@ -36,7 +38,7 @@
     </div>
     <div class="group">
       <label for="filter">Filter</label><br/>
-      <input id="filter" type="text" value="*"/>
+      <input id="filter" type="text" value=""/>
     </div>
     <div class="group">
       <label for="limit">Limit</label><br/>

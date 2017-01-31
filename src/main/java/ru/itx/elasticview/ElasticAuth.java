@@ -82,6 +82,7 @@ private class ElasticUser extends AbstractUser {
 						new ElasticUser(new JsonObject()
 							.put("login", user.getString("login"))
 							.put("group", user.getString("group"))
+							.put("description", user.getString("description"))
 							.put("fullAccess", user.getBoolean("fullAccess"))
 						)
 					));
@@ -117,6 +118,10 @@ private class ElasticUser extends AbstractUser {
 		} else {
 			context.next();
 		}
+	}
+	
+	public void viewPrincipal(RoutingContext context) {
+		context.response().end("logged as "+context.user().principal().getString("description"));
 	}
 
 }

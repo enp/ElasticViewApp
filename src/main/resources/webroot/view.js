@@ -14,15 +14,12 @@ var ElasticView = {
 			})
 			ElasticView.viewTypes()
 		})
-		.fail(function(data) {
-			alert(data.responseText);
-		})
 	},
 	
 	viewTypes : function() {
 		var index = $("#index").val()
 		if (view && index) {
-			$("#type").empty();
+			$("#type").empty()
 			$.each(view[index], function(type) {
 				$("#type").append(new Option(type))
 			})
@@ -34,7 +31,7 @@ var ElasticView = {
 		var index = $("#index").val()
 		var type = $("#type").val()
 		if (view && index && type) {
-			$("#sort").empty();
+			$("#sort").empty()
 			$.each(view[index][type].fields, function(i, sort) {
 				$("#sort").append(new Option(sort))
 			})
@@ -67,9 +64,9 @@ var ElasticView = {
 				document = document[1]
 				var row = $("<tr>")
 				row.hover(function() {
-					$(this).addClass("tr-hover");
+					$(this).addClass("tr-hover")
 				}, function() {
-				    $(this).removeClass("tr-hover");
+				    $(this).removeClass("tr-hover")
 				})
 				row.click(function(e) {
 					ElasticView.viewDocument(id)
@@ -83,7 +80,7 @@ var ElasticView = {
 			$("#data").append(table)
 		})
 		.fail(function(data) {
-			alert(data.responseText);
+			alert(data.responseText)
 		})
 	},
 	
@@ -103,9 +100,9 @@ var ElasticView = {
 			if (view[index][type].edit) {
 				jsoneditor.setMode("tree")
 				$("#editpanel").append("<br>")
-				$("#editpanel").append("<button class='edit' id='save' style='float: right; margin-left: 5px;' disabled>Save</button>")
-				$("#editpanel").append("<button class='edit' id='copy' style='float: right; margin-left: 5px;' disabled>Copy</button>");
-				$("#editpanel").append("<button class='edit' id='delete' style='float: right;'>Delete</button>");
+				$("#editpanel").append("<button class='edit' id='save' disabled>Save</button>")
+				$("#editpanel").append("<button class='edit' id='copy' disabled>Copy</button>")
+				$("#editpanel").append("<button class='edit' id='delete'>Delete</button>")
 				$(".edit").click(ElasticView.updateDocument)
 			} else {
 				jsoneditor.setMode("view")
@@ -113,7 +110,7 @@ var ElasticView = {
 			$("#popup").bPopup({opacity:0.6})
 		})
 		.fail(function(data) {
-			alert(data.responseText);
+			alert(data.responseText)
 		})
 	},
 	
@@ -133,24 +130,42 @@ var ElasticView = {
 			ElasticView.viewDocuments()
 		})
 		.fail(function(data) {
-			alert(data.responseText);
+			alert(data.responseText)
 		})
 		.always(function(data) {
 			$("#popup").bPopup().close()
 		})
 	},
-	
+
 	init : function() {
-		jsoneditor = new JSONEditor($("#jsoneditor")[0], { 
-			search: false, sortObjectKeys: true, onChange: function(){
-				$("#save").prop("disabled", false)
-				$("#copy").prop("disabled", false)
-			}
+		
+		$.ajax({ type: "GET", url: "auth" })
+		.done(function(data) {
+			
+			$("#auth").text(data)			
+			$("#login").text("Logout")
+			
+			$("#index").change(ElasticView.viewTypes)
+			$("#type").change(ElasticView.viewSort)
+			$("#view").click(ElasticView.viewDocuments)
+			
+			ElasticView.viewIndexes()
+			
+			$("#query").show()
+			
+			jsoneditor = new JSONEditor($("#jsoneditor")[0], { 
+				search: false, sortObjectKeys: true, onChange: function(){
+					$("#save").prop("disabled", false)
+					$("#copy").prop("disabled", false)
+				}
+			})
 		})
-		$("#index").change(ElasticView.viewTypes)
-		$("#type").change(ElasticView.viewSort)
-		$("#view").click(ElasticView.viewDocuments)
-		ElasticView.viewIndexes()
+		.always(function(data) {			
+			$("#login").click(function() {
+				$.get("logout")
+				location.reload()
+			})
+		})
 	}
 }
 

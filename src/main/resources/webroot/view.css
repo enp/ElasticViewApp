@@ -1,13 +1,13 @@
 body, select, input, button {
   font-family: droid sans mono,consolas,monospace,courier new,courier,sans-serif;
 }
-/*body {
-  font-family: Verdana;
-  background-color: #FFFFFF;
-}*/
+body {	
+  margin: 0;
+}
 form {
+  display: none;
   margin: 0 auto;
-  width: 900px;
+  width: 1000px;
 }
 label {
   font-size: 0.8em;
@@ -50,6 +50,10 @@ em {
   background-color: #bbd4fa;
   cursor: pointer;
 }
+.edit {
+	float: right;
+	margin-left: 5px;
+}
 #popup { 
   background-color:#fff;
   color:#000;
@@ -58,3 +62,14 @@ em {
   min-width:800px;
   min-height:100px;
 }
+#top {
+  position:fixed;
+  background:#bbd4fa;
+  width:100%;
+  padding: 5px;
+}
+#login {
+  float: right;
+  margin-right: 10px;
+}
+

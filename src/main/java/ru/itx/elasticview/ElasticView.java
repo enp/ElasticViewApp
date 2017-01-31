@@ -17,6 +17,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.AuthHandler;
 import io.vertx.ext.web.handler.BasicAuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -50,9 +51,20 @@ public class ElasticView extends AbstractVerticle {
 		Router router = Router.router(vertx);
 		
 		if (accessControl) {
-			ElasticAuth elasticAuth = new ElasticAuth(prefix);
-			router.route(prefix+"/view*").handler(BasicAuthHandler.create(elasticAuth));
-			router.route(prefix+"/view*").handler(elasticAuth::checkAccess);
+			
+			ElasticAuth elasticAuth = new ElasticAuth(prefix);			
+			AuthHandler authHandler = BasicAuthHandler.create(elasticAuth);
+			
+			router.route(prefix+"/auth").handler(authHandler);
+			router.route(prefix+"/auth").handler(elasticAuth::viewPrincipal);
+			
+			router.route(prefix+"/view/*").handler(authHandler);
+			router.route(prefix+"/view/*").handler(elasticAuth::checkAccess);
+			
+			router.route(prefix+"/logout").handler(context -> {
+				context.response().setStatusCode(401).end("Authentication required");
+			});
+			
 			vertx.createHttpClient(clientOptions).get("/.elasticview/_search?size=1000", response -> {
 				response.bodyHandler( body -> {
 					elasticAuth.load(body.toJsonObject().getJsonObject("hits"));
@@ -62,6 +74,7 @@ public class ElasticView extends AbstractVerticle {
 			}).exceptionHandler(error -> {
 				log.error("Users/groups request error : "+error.getMessage());
 			}).end();
+			
 		} else {
 			log.info("accessControl is disabled");
 		}
@@ -145,7 +158,7 @@ public class ElasticView extends AbstractVerticle {
 		
 		String size   = context.request().getParam("size");
 		
-		if (filter == null) filter = "*";
+		if (filter == null || filter.trim().isEmpty()) filter = "*";
 
 		JsonObject query = new JsonObject()
 			.put("query", new JsonObject()
