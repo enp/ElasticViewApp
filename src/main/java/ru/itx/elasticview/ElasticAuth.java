@@ -97,31 +97,35 @@ private class ElasticUser extends AbstractUser {
 	
 	public void checkAccess(RoutingContext context) {
 		JsonObject principal = context.user().principal();
-		JsonObject view = groups.get(principal.getString("group"));
-		String[] path = context.normalisedPath().replace(prefix+"/view", "view").split("/");
-		if (path.length == 1 && path[0].equals("view")) {
-			if (principal.getBoolean("fullAccess"))
-				context.next();
-			else
-				context.response().end(view.encode());
-		} else if (path.length > 1 && path[0].equals("view")) {
-			if (context.request().method() == HttpMethod.GET && 
-				view.getJsonObject(path[1]) != null && 
-				view.getJsonObject(path[1]).getJsonObject(path[2]) != null)
-				context.next();
-			else if (view.getJsonObject(path[1]) != null && 
-				view.getJsonObject(path[1]).getJsonObject(path[2]) != null && 
-				view.getJsonObject(path[1]).getJsonObject(path[2]).getBoolean("edit"))
-				context.next();
-			else
-				context.response().setStatusCode(403).end("Not allowed");
-		} else {
+		if (principal.getBoolean("fullAccess")) {
 			context.next();
+		} else {
+			JsonObject view = groups.get(principal.getString("group"));
+			String[] path = context.normalisedPath().replace(prefix+"/view", "view").split("/");
+			if (path.length == 1 && path[0].equals("view")) {
+				if (principal.getBoolean("fullAccess"))
+					context.next();
+				else
+					context.response().end(view.encode());
+			} else if (path.length > 1 && path[0].equals("view")) {
+				if (context.request().method() == HttpMethod.GET && 
+					view.getJsonObject(path[1]) != null && 
+					view.getJsonObject(path[1]).getJsonObject(path[2]) != null)
+					context.next();
+				else if (view.getJsonObject(path[1]) != null && 
+					view.getJsonObject(path[1]).getJsonObject(path[2]) != null && 
+					view.getJsonObject(path[1]).getJsonObject(path[2]).getBoolean("edit"))
+					context.next();
+				else
+					context.response().setStatusCode(403).end("Not allowed");
+			} else {
+				context.next();
+			}
 		}
 	}
 	
 	public void viewPrincipal(RoutingContext context) {
-		context.response().end("logged as "+context.user().principal().getString("description"));
+		context.response().end(" :: logged as "+context.user().principal().getString("description"));
 	}
 
 }

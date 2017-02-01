@@ -76,6 +76,11 @@ public class ElasticView extends AbstractVerticle {
 			}).end();
 			
 		} else {
+
+			router.route(prefix+"/auth").handler(context -> {
+				context.response().end("");
+			});
+			
 			log.info("accessControl is disabled");
 		}
 		

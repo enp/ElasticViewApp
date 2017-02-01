@@ -142,8 +142,12 @@ var ElasticView = {
 		$.ajax({ type: "GET", url: "auth" })
 		.done(function(data) {
 			
-			$("#auth").text(data)			
-			$("#login").text("Logout")
+			$("#auth").text(data)
+			
+			if (data == "")
+				$("#login").hide()
+			else
+				$("#login").text("Logout")
 			
 			$("#index").change(ElasticView.viewTypes)
 			$("#type").change(ElasticView.viewSort)
