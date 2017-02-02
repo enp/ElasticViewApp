@@ -17,14 +17,14 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import ru.itx.elasticview.ElasticView;
+import ru.itx.elasticview.ElasticVerticle;
 
 @RunWith(VertxUnitRunner.class)
 public class ElasticViewTest {
 	
 	private Integer portNumber;
 	
-	private Logger log = LoggerFactory.getLogger(ElasticView.class.getName());
+	private Logger log = LoggerFactory.getLogger(ElasticVerticle.class.getName());
 
 	private Vertx vertx;
 	
@@ -37,7 +37,7 @@ public class ElasticViewTest {
 	@Before
 	public void setUp(TestContext context) throws Exception {
 		vertx = Vertx.vertx();
-	    vertx.deployVerticle(ElasticView.class.getName(), context.asyncAssertSuccess());
+	    vertx.deployVerticle(ElasticVerticle.class.getName(), context.asyncAssertSuccess());
 	}
 
 	@Test

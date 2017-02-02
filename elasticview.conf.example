@@ -9,7 +9,6 @@
     "port" : 9200
   },
   "view": {
-    "showHiddenIndexes": true,
     "accessControl": false
   }
 }

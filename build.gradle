@@ -4,7 +4,7 @@ apply plugin: 'application'
 sourceCompatibility = 1.8
 mainClassName = 'io.vertx.core.Launcher'
 
-def mainVerticleName = 'ru.itx.elasticview.ElasticView'
+def mainVerticleName = 'ru.itx.elasticview.ElasticVerticle'
 
 jar {
 	from { configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) } }
