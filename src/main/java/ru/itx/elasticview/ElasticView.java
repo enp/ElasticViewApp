@@ -17,8 +17,6 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.AuthHandler;
-import io.vertx.ext.web.handler.BasicAuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
@@ -52,17 +50,19 @@ public class ElasticView extends AbstractVerticle {
 		
 		if (accessControl) {
 			
-			ElasticAuth elasticAuth = new ElasticAuth(prefix);			
-			AuthHandler authHandler = BasicAuthHandler.create(elasticAuth);
+			ElasticAuth elasticAuth = new ElasticAuth(prefix);
 			
-			router.route(prefix+"/auth").handler(authHandler);
-			router.route(prefix+"/auth").handler(elasticAuth::viewPrincipal);
+			router.route(prefix+"/view/*").handler(elasticAuth::authorize);
 			
-			router.route(prefix+"/view/*").handler(authHandler);
-			router.route(prefix+"/view/*").handler(elasticAuth::checkAccess);
+			router.route(prefix+"/logged").handler(elasticAuth::authorize);
+			router.route(prefix+"/logged").handler(context -> {
+				Object user = context.get("user");
+				String response = user == null ? "" : " :: "+user.toString();
+				context.response().end(response);
+			});
 			
 			router.route(prefix+"/logout").handler(context -> {
-				context.response().setStatusCode(401).end("Authentication required");
+				context.response().setStatusCode(401).end("Not authorized");
 			});
 			
 			vertx.createHttpClient(clientOptions).get("/.elasticview/_search?size=1000", response -> {
@@ -77,7 +77,7 @@ public class ElasticView extends AbstractVerticle {
 			
 		} else {
 
-			router.route(prefix+"/auth").handler(context -> {
+			router.route(prefix+"/logged").handler(context -> {
 				context.response().end("");
 			});
 			

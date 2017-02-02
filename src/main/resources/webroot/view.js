@@ -139,7 +139,7 @@ var ElasticView = {
 
 	init : function() {
 		
-		$.ajax({ type: "GET", url: "auth" })
+		$.ajax({ type: "GET", url: "logged" })
 		.done(function(data) {
 			
 			$("#auth").text(data)
