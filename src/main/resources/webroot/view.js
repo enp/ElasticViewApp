@@ -1,6 +1,7 @@
 var ElasticView = {
 		
 	view        : {},
+	user		: {},
 	jsoneditor  : {},
 	
 	document_id : null,
@@ -97,12 +98,18 @@ var ElasticView = {
 			jsoneditor.set(data)
 			document_id = id
 			$("#editpanel").empty()
-			if (view[index][type].edit) {
-				jsoneditor.setMode("tree")
+			if (user.fullAccess || view[index][type].actions.save || view[index][type].actions.copy || view[index][type].actions.delete) {
+				if (user.fullAccess || view[index][type].actions.save || view[index][type].actions.copy) 
+					jsoneditor.setMode("tree")
+				else
+					jsoneditor.setMode("view")
 				$("#editpanel").append("<br>")
-				$("#editpanel").append("<button class='edit' id='save' disabled>Save</button>")
-				$("#editpanel").append("<button class='edit' id='copy' disabled>Copy</button>")
-				$("#editpanel").append("<button class='edit' id='delete'>Delete</button>")
+				if (user.fullAccess || view[index][type].actions.save)
+					$("#editpanel").append("<button class='edit' id='save' disabled>Save</button>")
+				if (user.fullAccess || view[index][type].actions.copy)
+					$("#editpanel").append("<button class='edit' id='copy' disabled>Copy</button>")
+				if (user.fullAccess || view[index][type].actions.delete)
+					$("#editpanel").append("<button class='edit' id='delete'>Delete</button>")
 				$(".edit").click(ElasticView.updateDocument)
 			} else {
 				jsoneditor.setMode("view")
@@ -139,15 +146,17 @@ var ElasticView = {
 
 	init : function() {
 		
-		$.ajax({ type: "GET", url: "logged" })
+		$.ajax({ type: "GET", url: "logged", dataType: "json" })
 		.done(function(data) {
 			
-			$("#auth").text(data)
+			user = data
 			
-			if (data == "")
-				$("#login").hide()
-			else
+			if (user.description) {
+				$("#auth").text(" :: "+user.description)
 				$("#login").text("Logout")
+			} else {
+				$("#login").hide()
+			}				
 			
 			$("#index").change(ElasticView.viewTypes)
 			$("#type").change(ElasticView.viewSort)

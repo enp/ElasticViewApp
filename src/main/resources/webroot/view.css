@@ -72,4 +72,6 @@ em {
   float: right;
   margin-right: 10px;
 }
-
+div.jsoneditor-menu a {
+  color: #3883fa;
+}

@@ -58,9 +58,8 @@ public class ElasticVerticle extends AbstractVerticle {
 			
 			router.route(prefix+"/logged").handler(elasticAuth::authorize);
 			router.route(prefix+"/logged").handler(context -> {
-				Object user = context.get("user");
-				String response = user == null ? "" : " :: logged as "+user.toString();
-				context.response().end(response);
+				JsonObject user = context.get("user");
+				context.response().end(user.encode());
 			});
 			
 			router.route(prefix+"/logout").handler(context -> {
@@ -70,7 +69,7 @@ public class ElasticVerticle extends AbstractVerticle {
 		} else {
 
 			router.route(prefix+"/logged").handler(context -> {
-				context.response().end("");
+				context.response().end(new JsonObject().put("fullAccess", true).encode());
 			});
 			
 			log.info("accessControl is disabled");

@@ -73,7 +73,7 @@ public class ElasticAuth {
 	    				if (user.getString("login").equals(parts[0]) && user.getString("password").equals(parts[1])) {
 	    					boolean allowed = false;
     						String path = context.normalisedPath().replace(prefix+"/view", "view");
-	    					context.put("user", user.getString("description"));
+	    					context.put("user", user);
 	    					if (user.getBoolean("fullAccess") || context.normalisedPath().equals(prefix+"/logged")) {
 	    						allowed = true;
 	    					} else {
@@ -82,15 +82,28 @@ public class ElasticAuth {
 	    						if (parts.length == 1 && parts[0].equals("view")) {
 	    							context.response().end(view.encode());
 	    							allowed = true;
-	    						} else if (parts.length > 1 && parts[0].equals("view")) {
-	    							if (context.request().method() == HttpMethod.GET && 
-	    								view.getJsonObject(parts[1]) != null && 
-	    								view.getJsonObject(parts[1]).getJsonObject(parts[2]) != null)
+	    						} else if (parts.length > 2 && parts[0].equals("view")) {
+	    							HttpMethod method = context.request().method();
+	    							String index = parts[1];
+	    							String type  = parts[2];
+	    							if (method == HttpMethod.GET && 
+	    								view.getJsonObject(index) != null && 
+	    								view.getJsonObject(index).getJsonObject(type) != null) {
 	    								allowed = true;
-	    							else if (view.getJsonObject(parts[1]) != null && 
-	    								view.getJsonObject(parts[1]).getJsonObject(parts[2]) != null && 
-	    								view.getJsonObject(parts[1]).getJsonObject(parts[2]).getBoolean("edit"))
-	    								allowed = true;
+	    							} else if (parts.length == 4 && 
+		    							view.getJsonObject(index) != null && 
+	    								view.getJsonObject(index).getJsonObject(type) != null && 
+	    								view.getJsonObject(index).getJsonObject(type).getJsonObject("actions") != null) {
+	    								JsonObject actions = view.getJsonObject(index).getJsonObject(type).getJsonObject("actions");
+	    								String id = parts[3];
+	    								if (method == HttpMethod.POST && actions.getBoolean("save") && !id.isEmpty()) {
+	    									allowed = true;
+	    								} else if (method == HttpMethod.POST && actions.getBoolean("copy") && id.isEmpty()) {
+	    									allowed = true;
+	    								} else if (method == HttpMethod.DELETE && actions.getBoolean("delete") && !id.isEmpty()) {
+	    									allowed = true;
+	    								}
+	    							}
 	    						}
 	    					}
 	    					if (allowed) {
