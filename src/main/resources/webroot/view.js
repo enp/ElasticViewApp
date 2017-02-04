@@ -166,11 +166,29 @@ var ElasticView = {
 			
 			$("#query").show()
 			
-			jsoneditor = new JSONEditor($("#jsoneditor")[0], { 
+			jsoneditor = new JSONEditor($("#jsoneditor")[0], {
 				search: false, sortObjectKeys: true, onChange: function(){
 					$("#save").prop("disabled", false)
 					$("#copy").prop("disabled", false)
-				}
+				},
+				onEditable: function (node) {
+					if (user.fullAccess) {
+						return true
+					} else if (typeof document_id !== 'undefined') {
+						var index = $("#index").val()
+						var type = $("#type").val()
+						if ($.inArray(node.field, view[index][type].editFields) == -1) {
+							return false
+						} else {
+							return {
+								field: false,
+								value: true
+			            	}
+						}
+					} else {
+			            return false
+					}
+			    }
 			})
 		})
 		.always(function(data) {			

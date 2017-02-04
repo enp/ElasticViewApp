@@ -97,8 +97,10 @@ public class ElasticAuth {
 	    								JsonObject actions = view.getJsonObject(index).getJsonObject(type).getJsonObject("actions");
 	    								String id = parts[3];
 	    								if (method == HttpMethod.POST && actions.getBoolean("save") && !id.isEmpty()) {
+	    									// no check for editFields
 	    									allowed = true;
 	    								} else if (method == HttpMethod.POST && actions.getBoolean("copy") && id.isEmpty()) {
+	    									// no check for editFields
 	    									allowed = true;
 	    								} else if (method == HttpMethod.DELETE && actions.getBoolean("delete") && !id.isEmpty()) {
 	    									allowed = true;
