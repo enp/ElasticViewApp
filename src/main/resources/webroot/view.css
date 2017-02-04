@@ -51,16 +51,21 @@ em {
   cursor: pointer;
 }
 .edit {
-	float: right;
-	margin-left: 5px;
+  float: right;
+  margin-left: 5px;
 }
 #popup { 
   background-color:#fff;
   color:#000;
   display:none; 
   padding:20px;
-  min-width:800px;
-  min-height:100px;
+  /*min-width:800px;
+  min-height:300px;*/
+  position:float;
+}
+#jsoneditor {
+  width:800px;
+  height:400px;
 }
 #top {
   position:fixed;
