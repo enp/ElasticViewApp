@@ -167,6 +167,9 @@ var ElasticView = {
 			
 			ElasticView.viewIndexes()
 			
+			if (user.limit)
+				$("#limit").val(user.limit)
+			
 			$("#query").show()
 			
 			var modes = user.login != null && user.fullAccess ? ['tree','code'] : [] 
