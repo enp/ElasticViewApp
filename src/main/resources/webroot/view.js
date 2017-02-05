@@ -33,8 +33,11 @@ var ElasticView = {
 		var type = $("#type").val()
 		if (view && index && type) {
 			$("#sort").empty()
-			$.each(view[index][type].fields, function(i, sort) {
-				$("#sort").append(new Option(sort))
+			$.each(view[index][type].sortFields, function(field, style) {
+				var value = field
+				if (style == "keyword")
+					value += ".keyword"
+				$("#sort").append(new Option(field, value))
 			})
 		}
 	},

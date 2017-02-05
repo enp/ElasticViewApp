@@ -71,6 +71,10 @@ public class ElasticActions {
 	}
 
 	public void viewIndex(RoutingContext context) {
+
+		String index  = context.request().getParam("index");
+		String type   = context.request().getParam("type");
+		String path   = index+"/"+type+"/_search";
 		
 		String filter = context.request().getParam("filter");
 		
@@ -96,17 +100,12 @@ public class ElasticActions {
 			for (String field : fields.split(","))
 				query.getJsonObject("highlight").getJsonObject("fields").put(field, new JsonObject());
 			
-		if (sort != null && order != null)
+		if (sort != null && !sort.equals("null") && order != null)
 			query.put("sort", new JsonArray()
-				.add(new JsonObject().put(sort+".keyword", new JsonObject().put("order", order))));
+				.add(new JsonObject().put(sort, new JsonObject().put("order", order))));
 		
 		if (size != null)
 			query.put("size",size);
-
-
-		String index  = context.request().getParam("index");
-		String type   = context.request().getParam("type");
-		String path   = index+"/"+type+"/_search";
 
 		log.info("Request to ES : "+path+" : "+query.encode());
 
@@ -157,12 +156,26 @@ public class ElasticActions {
 					JsonObject types = new JsonObject();
 					for (String typeName : data.getJsonObject(indexName).getJsonObject("mappings").fieldNames()) {
 						JsonArray fields = new JsonArray();
+						JsonObject sortFields = new JsonObject();
 						JsonObject properties = data.getJsonObject(indexName).getJsonObject("mappings").getJsonObject(typeName).getJsonObject("properties");
-						for (String field : properties.fieldNames()) {
-							if (properties.getJsonObject(field).containsKey("type"))
-								fields.add(field);
+						for (String fieldName : properties.fieldNames()) {
+							JsonObject field = properties.getJsonObject(fieldName);
+							if (field.getString("type") != null) {
+								fields.add(fieldName);
+								if (field.getString("type").equals("text")) {
+									if (field.getJsonObject("fields") != null &&
+										field.getJsonObject("fields").getJsonObject("keyword") != null &&
+										field.getJsonObject("fields").getJsonObject("keyword").getString("type").equals("keyword")) {
+										sortFields.put(fieldName, "keyword");
+									} else if (field.getBoolean("fielddata") != null && field.getBoolean("fielddata").equals(true)) {
+										sortFields.put(fieldName, "direct");
+									}
+								} else {
+									sortFields.put(fieldName, "direct");
+								}
+							}
 						}
-						types.put(typeName, new JsonObject().put("fields", fields).put("edit", true));
+						types.put(typeName, new JsonObject().put("fields", fields).put("sortFields", sortFields));
 					}
 					view.put(indexName, types);
 				}
