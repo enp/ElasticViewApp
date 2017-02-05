@@ -1,0 +1,12 @@
+{ "index" : { "_index" : "connections", "_type" : "connection" } }
+{ "interface" : "lo", "ip": "127.0.0.1/8", "description": "Loopback" }
+{ "index" : { "_index" : "connections", "_type" : "connection" } }
+{ "interface" : "eth0", "ip": "192.168.1.1/24", "description": "Local area network" }
+{ "index" : { "_index" : "connections", "_type" : "connection" } }
+{ "interface" : "eth1", "ip": "203.0.113.1/24", "description": "Wide area network" }
+{ "index" : { "_index" : ".elasticview", "_type" : "user" } }
+{ "description" : "John Doe", "fullAccess" : true, "login" : "johndoe" , "password" : "john" }
+{ "index" : { "_index" : ".elasticview", "_type" : "user" } }
+{ "description" : "Jane Doe", "fullAccess" : false, "group" : "connections", "limit" : 15, "login" : "janedoe" , "password" : "jane" }
+{ "index" : { "_index" : ".elasticview", "_type" : "group" } }
+{ "description" : "view/edit connections", "name" : "connections" , "view" : { "connections" : { "connection": { "actions" : { "copy" : false, "delete" : false, "save" : true }, "editFields" : ["description"], "sortFields" : { "description" : "keyword" }, "fields" : [ "interface", "ip", "description"] } } } }
