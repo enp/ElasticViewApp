@@ -169,8 +169,10 @@ var ElasticView = {
 			
 			$("#query").show()
 			
+			var modes = user.login != null && user.fullAccess ? ['tree','code'] : [] 
+			
 			jsoneditor = new JSONEditor($("#jsoneditor")[0], {
-				search: false, sortObjectKeys: true, onChange: function(){
+				search: false, sortObjectKeys: true, modes: modes, onChange: function(){
 					$("#save").prop("disabled", false)
 					$("#copy").prop("disabled", false)
 				},
