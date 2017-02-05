@@ -70,53 +70,58 @@ public class ElasticAuth {
 	    			context.response().setStatusCode(400).end("Wrong authorization data");
 	    		} else {
 	    			for (JsonObject user : users) {
-	    				if (user.getString("login").equals(parts[0]) && user.getString("password").equals(parts[1])) {
-	    					boolean allowed = false;
-    						String path = context.normalisedPath().replace(prefix+"/view", "view");
-	    					context.put("user", user);
-	    					if (user.getBoolean("fullAccess") || context.normalisedPath().equals(prefix+"/logged")) {
-	    						allowed = true;
+	    				if (user.getString("login").equals(parts[0])) {
+	    					if (user.getString("password").equals(parts[1])) {
+		    					boolean allowed = false;
+	    						String path = context.normalisedPath().replace(prefix+"/view", "view");
+		    					context.put("user", user);
+		    					if (user.getBoolean("fullAccess") || context.normalisedPath().equals(prefix+"/logged")) {
+		    						allowed = true;
+		    					} else {
+		    						parts = path.split("/");
+		    						JsonObject view = groups.get(user.getString("group"));
+		    						if (parts.length == 1 && parts[0].equals("view")) {
+		    							context.response().end(view.encode());
+		    							allowed = true;
+		    						} else if (parts.length > 2 && parts[0].equals("view")) {
+		    							HttpMethod method = context.request().method();
+		    							String index = parts[1];
+		    							String type  = parts[2];
+		    							if (method == HttpMethod.GET && 
+		    								view.getJsonObject(index) != null && 
+		    								view.getJsonObject(index).getJsonObject(type) != null) {
+		    								allowed = true;
+		    							} else if (parts.length == 4 && 
+			    							view.getJsonObject(index) != null && 
+		    								view.getJsonObject(index).getJsonObject(type) != null && 
+		    								view.getJsonObject(index).getJsonObject(type).getJsonObject("actions") != null) {
+		    								JsonObject actions = view.getJsonObject(index).getJsonObject(type).getJsonObject("actions");
+		    								String id = parts[3];
+		    								if (method == HttpMethod.POST && actions.getBoolean("save") && !id.isEmpty()) {
+		    									// no check for editFields
+		    									allowed = true;
+		    								} else if (method == HttpMethod.POST && actions.getBoolean("copy") && id.isEmpty()) {
+		    									// no check for editFields
+		    									allowed = true;
+		    								} else if (method == HttpMethod.DELETE && actions.getBoolean("delete") && !id.isEmpty()) {
+		    									allowed = true;
+		    								}
+		    							}
+		    						}
+		    					}
+		    					if (allowed) {
+		    						log.trace("User ["+user.getString("login")+"] allowed : "+context.request().method()+" "+path);
+		    						if (!context.response().ended())
+		    							context.next();
+		    					} else {
+		    						log.trace("User ["+user.getString("login")+"] not allowed : "+context.request().method()+" "+path);
+		    						context.response().setStatusCode(403).end("Not allowed");
+		    					}
+		    					return;
 	    					} else {
-	    						parts = path.split("/");
-	    						JsonObject view = groups.get(user.getString("group"));
-	    						if (parts.length == 1 && parts[0].equals("view")) {
-	    							context.response().end(view.encode());
-	    							allowed = true;
-	    						} else if (parts.length > 2 && parts[0].equals("view")) {
-	    							HttpMethod method = context.request().method();
-	    							String index = parts[1];
-	    							String type  = parts[2];
-	    							if (method == HttpMethod.GET && 
-	    								view.getJsonObject(index) != null && 
-	    								view.getJsonObject(index).getJsonObject(type) != null) {
-	    								allowed = true;
-	    							} else if (parts.length == 4 && 
-		    							view.getJsonObject(index) != null && 
-	    								view.getJsonObject(index).getJsonObject(type) != null && 
-	    								view.getJsonObject(index).getJsonObject(type).getJsonObject("actions") != null) {
-	    								JsonObject actions = view.getJsonObject(index).getJsonObject(type).getJsonObject("actions");
-	    								String id = parts[3];
-	    								if (method == HttpMethod.POST && actions.getBoolean("save") && !id.isEmpty()) {
-	    									// no check for editFields
-	    									allowed = true;
-	    								} else if (method == HttpMethod.POST && actions.getBoolean("copy") && id.isEmpty()) {
-	    									// no check for editFields
-	    									allowed = true;
-	    								} else if (method == HttpMethod.DELETE && actions.getBoolean("delete") && !id.isEmpty()) {
-	    									allowed = true;
-	    								}
-	    							}
-	    						}
+	    						context.response().setStatusCode(401).end("Wrong password");
+	    						return;
 	    					}
-	    					if (allowed) {
-	    						log.trace("User ["+user.getString("login")+"] allowed : "+context.request().method()+" "+path);
-	    						if (!context.response().ended())
-	    							context.next();
-	    					} else {
-	    						log.trace("User ["+user.getString("login")+"] not allowed : "+context.request().method()+" "+path);
-	    						context.response().setStatusCode(403).end("Not allowed");
-	    					}
-	    					return;
 	    				}
 	    			}
 	    			log.trace("User ["+parts[0]+"] not found");
