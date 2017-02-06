@@ -19,9 +19,9 @@ repositories {
 }
 
 dependencies {
-	compile 'io.vertx:vertx-core:3.+'
-	compile 'io.vertx:vertx-web:3.+'
-	testCompile 'io.vertx:vertx-unit:3.+'
+	compile 'io.vertx:vertx-core:3.3.+'
+	compile 'io.vertx:vertx-web:3.3.+'
+	testCompile 'io.vertx:vertx-unit:3.3.+'
 	testCompile 'junit:junit:4.+'
 	compile fileTree(dir: 'lib', include: ['*.jar'])
 }
