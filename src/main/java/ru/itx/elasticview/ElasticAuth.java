@@ -32,6 +32,8 @@ public class ElasticAuth {
 	}
 	
 	public void load() {
+		users.clear();
+		groups.clear();
 		client.get("/.elasticview/_search?size=1000", response -> {
 			response.bodyHandler( body -> {
 				JsonObject data = body.toJsonObject().getJsonObject("hits");
