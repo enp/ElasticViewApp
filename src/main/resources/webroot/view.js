@@ -33,6 +33,12 @@ var ElasticView = {
 		var type = $("#type").val()
 		if (view && index && type) {
 			$("#sort").empty()
+			if (!view[index][type].sortFields) {
+				view[index][type].sortFields = {}
+				$.each(view[index][type].fields, function(i, field) {
+					view[index][type].sortFields[field] = 'keyword'
+				})
+			}
 			$.each(view[index][type].sortFields, function(field, style) {
 				var value = field
 				if (style == "keyword")
@@ -185,13 +191,17 @@ var ElasticView = {
 					} else if (typeof document_id !== 'undefined') {
 						var index = $("#index").val()
 						var type = $("#type").val()
-						if ($.inArray(node.field, view[index][type].editFields) == -1) {
-							return false
+						if (node.path.length > 0) {
+							if ($.inArray(node.path[0], view[index][type].editFields) == -1) {
+								return false
+							} else {
+								return {
+									field: node.path.length > 1 ? true : false,
+									value: true
+				            	}
+							}
 						} else {
-							return {
-								field: false,
-								value: true
-			            	}
+							return false
 						}
 					} else {
 			            return false
