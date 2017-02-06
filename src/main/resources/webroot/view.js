@@ -83,6 +83,8 @@ var ElasticView = {
 				})
 				$.each(view[index][type].fields, function(number, column){
 					var cell = (document[column] == undefined) ? "" : document[column]
+					if (typeof cell === 'object')
+						cell = JSON.stringify(cell)
 					row.append("<td class='cell'>"+cell+"</td>")
 				})
 				table.append(row)
