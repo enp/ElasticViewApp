@@ -88,7 +88,9 @@ public class ElasticVerticle extends AbstractVerticle {
 		
 		router.route(prefix+"/view").handler(elasticActions::viewAll);
 		
-		router.route(prefix+"/*").handler(StaticHandler.create().setCachingEnabled(false));
+		boolean caching = !ElasticVerticle.class.getClassLoader().getResource("webroot").getProtocol().equals("file");
+		
+		router.route(prefix+"/*").handler(StaticHandler.create().setCachingEnabled(caching));
 
 		vertx.createHttpServer(serverOptions).requestHandler(router::accept).listen(result -> {
 			if (result.succeeded()) {
