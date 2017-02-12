@@ -96,6 +96,16 @@ var ElasticView = {
 		})
 	},
 	
+	exportDocuments : function() {
+		var index  = $("#index").val()
+		var type   = $("#type").val()
+		var sort   = $("#sort").val()
+		var order  = $("#order").val()
+		var filter = $("#filter").val()
+		var size   = $("#limit").val()
+		window.open("view/"+index+"/"+type+"?format=csv&sort="+sort+"&order="+order+"&filter="+filter+"&size="+size+"&fields="+view[index][type].fields.join())
+	},
+	
 	viewDocument : function(id) {
 		var index = $("#index").val()
 		var type  = $("#type").val()
@@ -172,6 +182,7 @@ var ElasticView = {
 			$("#index").change(ElasticView.viewTypes)
 			$("#type").change(ElasticView.viewSort)
 			$("#view").click(ElasticView.viewDocuments)
+			$("#export").click(ElasticView.exportDocuments)
 			
 			ElasticView.viewIndexes()
 			

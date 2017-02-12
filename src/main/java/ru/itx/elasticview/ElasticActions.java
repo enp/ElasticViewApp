@@ -85,6 +85,8 @@ public class ElasticActions {
 		
 		String size   = context.request().getParam("size");
 		
+		String format = context.request().getParam("format");
+		
 		if (filter == null || filter.trim().isEmpty()) filter = "*";
 
 		JsonObject query = new JsonObject()
@@ -96,9 +98,14 @@ public class ElasticActions {
 				.put("require_field_match", false)
 				.put("fields", new JsonObject()));
 		
-		if (fields != null)
-			for (String field : fields.split(","))
+		if (fields != null) {
+			JsonArray source = new JsonArray(); 
+			for (String field : fields.split(",")) {
 				query.getJsonObject("highlight").getJsonObject("fields").put(field, new JsonObject());
+				source.add(field);
+			}
+			query.put("_source", source);
+		}
 			
 		if (sort != null && !sort.equals("null") && order != null)
 			query.put("sort", new JsonArray()
@@ -119,24 +126,34 @@ public class ElasticActions {
 					return;
 				}
 				JsonArray view = new JsonArray();
+				StringBuilder export = new StringBuilder();
 				for (Object document : data.getJsonObject("hits").getJsonArray("hits")) {
 					String     id        = ((JsonObject)document).getString("_id");
 					JsonObject source    = ((JsonObject)document).getJsonObject("_source");
 					JsonObject highlight = ((JsonObject)document).getJsonObject("highlight");
-					if (highlight != null) {
+					if (highlight != null && format != null && !format.equals("csv")) {
 						for (String field : source.fieldNames()) {		
 							JsonArray item = highlight.getJsonArray(field);
 							if (item != null)
 								source.put(field, item.getString(0));
 						}
 					}
-					for (String field : source.fieldNames()) {		
+					for (String field : fields.split(",")) {		
 						if (field.equals("password"))
 							source.put(field, "***");
+						if (format != null && format.equals("csv")) {
+							export.append(source.getValue(field)+"\t");
+						}
 					}
-					view.add(new JsonArray().add(id).add(source));
+					if (format != null && format.equals("csv")) {
+						export.append("\r\n");
+					} else {
+						view.add(new JsonArray().add(id).add(source));
+					}
 				}
-				context.response().end(view.encode());
+				String result      = (format != null && format.equals("csv")) ? export.toString() : view.encode();
+				String contentType = (format != null && format.equals("csv")) ? "vnd.ms-excel" : "json";
+				context.response().putHeader("content-type", "application/"+contentType).end(result);
 			}).exceptionHandler(error -> {
 				context.fail(error);
 			});
