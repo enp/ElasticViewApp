@@ -158,24 +158,26 @@ public class ElasticActions {
 						JsonArray fields = new JsonArray();
 						JsonObject sortFields = new JsonObject();
 						JsonObject properties = data.getJsonObject(indexName).getJsonObject("mappings").getJsonObject(typeName).getJsonObject("properties");
-						for (String fieldName : properties.fieldNames()) {
-							JsonObject field = properties.getJsonObject(fieldName);
-							if (field.getString("type") != null) {
-								fields.add(fieldName);
-								if (field.getString("type").equals("text")) {
-									if (field.getJsonObject("fields") != null &&
-										field.getJsonObject("fields").getJsonObject("keyword") != null &&
-										field.getJsonObject("fields").getJsonObject("keyword").getString("type").equals("keyword")) {
-										sortFields.put(fieldName, "keyword");
-									} else if (field.getBoolean("fielddata") != null && field.getBoolean("fielddata").equals(true)) {
+						if (properties != null) {
+							for (String fieldName : properties.fieldNames()) {
+								JsonObject field = properties.getJsonObject(fieldName);
+								if (field.getString("type") != null) {
+									fields.add(fieldName);
+									if (field.getString("type").equals("text")) {
+										if (field.getJsonObject("fields") != null &&
+											field.getJsonObject("fields").getJsonObject("keyword") != null &&
+											field.getJsonObject("fields").getJsonObject("keyword").getString("type").equals("keyword")) {
+											sortFields.put(fieldName, "keyword");
+										} else if (field.getBoolean("fielddata") != null && field.getBoolean("fielddata").equals(true)) {
+											sortFields.put(fieldName, "direct");
+										}
+									} else {
 										sortFields.put(fieldName, "direct");
 									}
-								} else {
-									sortFields.put(fieldName, "direct");
 								}
 							}
+							types.put(typeName, new JsonObject().put("fields", fields).put("sortFields", sortFields));
 						}
-						types.put(typeName, new JsonObject().put("fields", fields).put("sortFields", sortFields));
 					}
 					view.put(indexName, types);
 				}
