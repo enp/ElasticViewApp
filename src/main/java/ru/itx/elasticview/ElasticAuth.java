@@ -89,24 +89,23 @@ public class ElasticAuth {
 		    							HttpMethod method = context.request().method();
 		    							String index = parts[1];
 		    							String type  = parts[2];
-		    							if (method == HttpMethod.GET && 
-		    								view.getJsonObject(index) != null && 
-		    								view.getJsonObject(index).getJsonObject(type) != null) {
-		    								allowed = true;
-		    							} else if (parts.length == 4 && 
-			    							view.getJsonObject(index) != null && 
-		    								view.getJsonObject(index).getJsonObject(type) != null && 
-		    								view.getJsonObject(index).getJsonObject(type).getJsonObject("actions") != null) {
-		    								JsonObject actions = view.getJsonObject(index).getJsonObject(type).getJsonObject("actions");
-		    								String id = parts[3];
-		    								if (method == HttpMethod.POST && actions.getBoolean("save") && !id.isEmpty()) {
-		    									// no check for editFields
+		    							if (view.getJsonObject(index) != null && view.getJsonObject(index).getJsonObject(type) != null) {
+		    								if (method == HttpMethod.GET) {
 		    									allowed = true;
-		    								} else if (method == HttpMethod.POST && actions.getBoolean("copy") && id.isEmpty()) {
-		    									// no check for editFields
-		    									allowed = true;
-		    								} else if (method == HttpMethod.DELETE && actions.getBoolean("delete") && !id.isEmpty()) {
-		    									allowed = true;
+		    								} else if (view.getJsonObject(index).getJsonObject(type).getJsonObject("actions") != null) {
+			    								JsonObject actions = view.getJsonObject(index).getJsonObject(type).getJsonObject("actions");
+			    								if (parts.length == 4) {
+			    									String id = parts[3];
+			    									if (method == HttpMethod.POST && actions.getBoolean("save") && !id.isEmpty()) {
+				    									// no check for editFields
+				    									allowed = true;
+				    								} else if (method == HttpMethod.DELETE && actions.getBoolean("delete") && !id.isEmpty()) {
+				    									allowed = true;
+				    								}
+			    								} else if (method == HttpMethod.POST && actions.getBoolean("copy")) {
+			    									// no check for editFields
+			    									allowed = true;
+			    								}
 		    								}
 		    							}
 		    						}
