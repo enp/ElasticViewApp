@@ -119,7 +119,7 @@ var ElasticView = {
 			jsoneditor.set(data)
 			document_id = id
 			$("#editpanel").empty()
-			if (user.fullAccess || view[index][type].actions.save || view[index][type].actions.copy || view[index][type].actions.delete) {
+			if (user.fullAccess || view[index][type].actions.save || view[index][type].actions.copy || view[index][type].actions['delete']) {
 				if (user.fullAccess || view[index][type].actions.save || view[index][type].actions.copy) 
 					jsoneditor.setMode("tree")
 				else
@@ -129,7 +129,7 @@ var ElasticView = {
 					$("#editpanel").append("<button class='edit' id='save' disabled>Save</button>")
 				if (user.fullAccess || view[index][type].actions.copy)
 					$("#editpanel").append("<button class='edit' id='copy' disabled>Copy</button>")
-				if (user.fullAccess || view[index][type].actions.delete)
+				if (user.fullAccess || view[index][type].actions['delete'])
 					$("#editpanel").append("<button class='edit' id='delete'>Delete</button>")
 				$(".edit").click(ElasticView.updateDocument)
 			} else {
