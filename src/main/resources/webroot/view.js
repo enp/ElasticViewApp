@@ -148,21 +148,23 @@ var ElasticView = {
 		var method = this.id == 'delete' ? 'DELETE' : 'POST'
 		var id     = this.id == 'copy' ? '' : encodeURIComponent(document_id)
 		var data   = this.id == 'delete' ? '' : jsoneditor.getText()
-		$.ajax({ 
-			type: method, 
-			url: "view/"+index+"/"+type+"/"+id, 
-			dataType: "json",
-			data: data
-		})
-		.done(function(data) {
-			ElasticView.viewDocuments()
-		})
-		.fail(function(data) {
-			alert(data.responseText)
-		})
-		.always(function(data) {
-			$("#popup").bPopup().close()
-		})
+		if (this.id != 'delete' || (this.id == 'delete' && confirm ('Delete document?'))) {
+			$.ajax({ 
+				type: method, 
+				url: "view/"+index+"/"+type+"/"+id, 
+				dataType: "json",
+				data: data
+			})
+			.done(function(data) {
+				ElasticView.viewDocuments()
+			})
+			.fail(function(data) {
+				alert(data.responseText)
+			})
+			.always(function(data) {
+				$("#popup").bPopup().close()
+			})
+		}
 	},
 
 	init : function() {
