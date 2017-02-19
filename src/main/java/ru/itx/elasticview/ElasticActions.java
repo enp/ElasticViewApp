@@ -1,8 +1,17 @@
 package ru.itx.elasticview;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFFont;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
@@ -126,7 +135,6 @@ public class ElasticActions {
 					return;
 				}
 				JsonArray view = new JsonArray();
-				StringBuilder export = new StringBuilder();
 				for (Object document : data.getJsonObject("hits").getJsonArray("hits")) {
 					String     id        = ((JsonObject)document).getString("_id");
 					JsonObject source    = ((JsonObject)document).getJsonObject("_source");
@@ -138,22 +146,49 @@ public class ElasticActions {
 								source.put(field, item.getString(0));
 						}
 					}
-					for (String field : fields.split(",")) {		
+					for (String field : fields.split(",")) {
 						if (field.equals("password"))
 							source.put(field, "***");
-						if (format != null && format.equals("csv")) {
-							export.append(source.getValue(field)+"\t");
-						}
 					}
-					if (format != null && format.equals("csv")) {
-						export.append("\r\n");
-					} else {
-						view.add(new JsonArray().add(id).add(source));
-					}
+					view.add(new JsonArray().add(id).add(source));
 				}
-				String result      = (format != null && format.equals("csv")) ? export.toString() : view.encode();
-				String contentType = (format != null && format.equals("csv")) ? "vnd.ms-excel" : "json";
-				context.response().putHeader("content-type", "application/"+contentType).end(result);
+				if (format != null && format.equals("csv")) {
+					try (HSSFWorkbook workbook = new HSSFWorkbook()) {
+						int line = 0, col = 0;
+			            HSSFSheet sheet = workbook.createSheet(type);
+			            HSSFRow rowhead = sheet.createRow(line++);
+			            HSSFFont fonthead = workbook.createFont();
+			            fonthead.setFontName("Monospace");
+			            fonthead.setBold(true);
+			            HSSFCellStyle stylehead = workbook.createCellStyle();
+		                stylehead.setFont(fonthead);
+			            for (String field : fields.split(",")) {
+			            	Cell cell = rowhead.createCell(col++);
+			            	cell.setCellValue(field);
+			            	cell.setCellStyle(stylehead);
+			            }
+			            HSSFFont font = workbook.createFont();
+			            font.setFontName("Monospace");
+			            HSSFCellStyle style = workbook.createCellStyle();
+		                style.setFont(font);
+			            for (Object item : view.getList()) {
+			            	JsonObject document = ((JsonArray)item).getJsonObject(1);
+			            	HSSFRow row = sheet.createRow(line++);
+			            	col = 0;
+			            	for (String field : fields.split(",")) {
+				            	Cell cell = row.createCell(col++);
+				            	cell.setCellValue(document.getValue(field).toString());
+				            	cell.setCellStyle(style);
+				            }
+			            }
+			            for (;col>-1;col--) {
+			            	sheet.autoSizeColumn(col);
+			            }
+			            context.response().putHeader("content-type", "application/vnd.ms-excel").end(Buffer.buffer(workbook.getBytes()));
+					} catch (IOException e) {}
+				} else {
+					context.response().putHeader("content-type", "application/json").end(view.encode());
+				}
 			}).exceptionHandler(error -> {
 				context.fail(error);
 			});
