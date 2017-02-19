@@ -82,7 +82,7 @@ public class ElasticActions {
 	public void viewIndex(RoutingContext context) {
 
 		String index  = context.request().getParam("index");
-		String type   = context.request().getParam("type");
+		String type   = context.request().getParam("type").replace(".xls", "");
 		String path   = index+"/"+type+"/_search";
 		
 		String filter = context.request().getParam("filter");
@@ -93,8 +93,6 @@ public class ElasticActions {
 		String order  = context.request().getParam("order");
 		
 		String size   = context.request().getParam("size");
-		
-		String format = context.request().getParam("format");
 		
 		if (filter == null || filter.trim().isEmpty()) filter = "*";
 
@@ -122,6 +120,8 @@ public class ElasticActions {
 		
 		if (size != null)
 			query.put("size",size);
+		
+		boolean xls = context.request().getParam("type").endsWith(".xls");
 
 		log.info("Request to ES : "+path+" : "+query.encode());
 
@@ -139,7 +139,7 @@ public class ElasticActions {
 					String     id        = ((JsonObject)document).getString("_id");
 					JsonObject source    = ((JsonObject)document).getJsonObject("_source");
 					JsonObject highlight = ((JsonObject)document).getJsonObject("highlight");
-					if (highlight != null && format != null && !format.equals("csv")) {
+					if (highlight != null && !xls) {
 						for (String field : source.fieldNames()) {		
 							JsonArray item = highlight.getJsonArray(field);
 							if (item != null)
@@ -152,7 +152,7 @@ public class ElasticActions {
 					}
 					view.add(new JsonArray().add(id).add(source));
 				}
-				if (format != null && format.equals("csv")) {
+				if (xls) {
 					try (HSSFWorkbook workbook = new HSSFWorkbook()) {
 						int line = 0, col = 0;
 			            HSSFSheet sheet = workbook.createSheet(type);
@@ -177,7 +177,7 @@ public class ElasticActions {
 			            	col = 0;
 			            	for (String field : fields.split(",")) {
 				            	Cell cell = row.createCell(col++);
-				            	cell.setCellValue(document.getValue(field).toString());
+				            	cell.setCellValue(document.getValue(field) != null ? document.getValue(field).toString() : "");
 				            	cell.setCellStyle(style);
 				            }
 			            }
@@ -185,7 +185,9 @@ public class ElasticActions {
 			            	sheet.autoSizeColumn(col);
 			            }
 			            context.response().putHeader("content-type", "application/vnd.ms-excel").end(Buffer.buffer(workbook.getBytes()));
-					} catch (IOException e) {}
+					} catch (IOException error) {
+						context.fail(error);
+					}
 				} else {
 					context.response().putHeader("content-type", "application/json").end(view.encode());
 				}

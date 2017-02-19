@@ -103,7 +103,7 @@ var ElasticView = {
 		var order  = $("#order").val()
 		var filter = $("#filter").val()
 		var size   = $("#limit").val()
-		window.open("view/"+index+"/"+type+"?format=csv&sort="+sort+"&order="+order+"&filter="+filter+"&size="+size+"&fields="+view[index][type].fields.join())
+		window.open("view/"+index+"/"+type+".xls?sort="+sort+"&order="+order+"&filter="+filter+"&size="+size+"&fields="+view[index][type].fields.join())
 	},
 	
 	viewDocument : function(id) {
