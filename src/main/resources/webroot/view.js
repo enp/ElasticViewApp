@@ -65,7 +65,8 @@ var ElasticView = {
 			var table = $("<table>")
 			var head = $("<tr>")
 			$.each(view[index][type].fields, function(number, column){
-				head.append("<th class='head'>"+column+"</th>")
+				if (column != 'color')
+					head.append("<th class='head'>"+column+"</th>")
 			})
 			table.append(head)
 			table.addClass("documents")
@@ -73,6 +74,8 @@ var ElasticView = {
 				id = document[0]
 				document = document[1]
 				var row = $("<tr>")
+				if (document.color)
+					row = $("<tr style='background-color:"+document.color+"'>")
 				row.hover(function() {
 					$(this).addClass("tr-hover")
 				}, function() {
@@ -82,10 +85,12 @@ var ElasticView = {
 					ElasticView.viewDocument(id)
 				})
 				$.each(view[index][type].fields, function(number, column){
-					var cell = (document[column] == undefined) ? "" : document[column]
-					if (typeof cell === 'object')
-						cell = JSON.stringify(cell)
-					row.append("<td class='cell'>"+cell+"</td>")
+					if (column != 'color') {
+						var cell = (document[column] == undefined) ? "" : document[column]
+						if (typeof cell === 'object')
+							cell = JSON.stringify(cell)
+						row.append("<td class='cell'>"+cell+"</td>")
+					}
 				})
 				table.append(row)
 			})
