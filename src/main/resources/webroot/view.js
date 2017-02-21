@@ -1,9 +1,9 @@
 var ElasticView = {
-		
+
 	view        : {},
 	user		: {},
 	jsoneditor  : {},
-	
+
 	document_id : null,
 
 	viewIndexes : function() {
@@ -97,7 +97,7 @@ var ElasticView = {
 			$("#data").append(table)
 		})
 		.fail(function(data) {
-			alert(data.responseText)
+			alert(data.responseText || data.statusText)
 		})
 	},
 	
@@ -116,7 +116,7 @@ var ElasticView = {
 		var type  = $("#type").val()
 		$.ajax({ 
 			type: "GET", 
-			url: "view/"+index+"/"+type+"/"+encodeURIComponent(id), 
+			url: "view/"+index+"/"+type+"/"+encodeURIComponent(id),
 			dataType: "json"
 		})
 		.done(function(data) {			
@@ -143,7 +143,7 @@ var ElasticView = {
 			$("#popup").bPopup({opacity:0.6})
 		})
 		.fail(function(data) {
-			alert(data.responseText)
+			alert(data.responseText || data.statusText || data.statusText)
 		})
 	},
 	
@@ -164,7 +164,7 @@ var ElasticView = {
 				ElasticView.viewDocuments()
 			})
 			.fail(function(data) {
-				alert(data.responseText)
+				alert(data.responseText || data.statusText)
 			})
 			.always(function(data) {
 				$("#popup").bPopup().close()

@@ -64,13 +64,21 @@ public class ElasticActions {
 		String index = context.request().getParam("index");
 		String type  = context.request().getParam("type");		
 		String id    = context.request().getParam("id");
+		
+		String path  = "/"+index+"/"+type+"/"+id+"/_source";
 
 		try { id = URLEncoder.encode(id,"UTF-8"); } catch (UnsupportedEncodingException e) {}
 
-		client.get("/"+index+"/"+type+"/"+id+"/_source", response -> {
+		client.get(path, response -> {
 			response.bodyHandler( body -> {
-				JsonObject document = body.toJsonObject();
-				context.response().end(document.encode());
+				if (body.length() > 0) {
+					JsonObject document = body.toJsonObject();
+					context.response().end(document.encode());
+				} else {
+					log.error("Empty response from ES : GET "+path);
+					context.fail(400);
+					return;
+				}
 			}).exceptionHandler(error -> {
 				context.fail(error);
 			});
