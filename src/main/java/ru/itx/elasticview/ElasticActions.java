@@ -1,17 +1,8 @@
 package ru.itx.elasticview;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFFont;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
@@ -90,7 +81,7 @@ public class ElasticActions {
 	public void viewIndex(RoutingContext context) {
 
 		String index  = context.request().getParam("index");
-		String type   = context.request().getParam("type").replace(".xls", "");
+		String type   = context.request().getParam("type").replace(".csv", "");
 		String path   = index+"/"+type+"/_search";
 		
 		String filter = context.request().getParam("filter");
@@ -129,7 +120,7 @@ public class ElasticActions {
 		if (size != null)
 			query.put("size",size);
 		
-		boolean xls = context.request().getParam("type").endsWith(".xls");
+		boolean csv = context.request().getParam("type").endsWith(".csv");
 
 		log.info("Request to ES : "+path+" : "+query.encode());
 
@@ -147,7 +138,7 @@ public class ElasticActions {
 					String     id        = ((JsonObject)document).getString("_id");
 					JsonObject source    = ((JsonObject)document).getJsonObject("_source");
 					JsonObject highlight = ((JsonObject)document).getJsonObject("highlight");
-					if (highlight != null && !xls) {
+					if (highlight != null && !csv) {
 						for (String field : source.fieldNames()) {		
 							JsonArray item = highlight.getJsonArray(field);
 							if (item != null)
@@ -160,44 +151,22 @@ public class ElasticActions {
 					}
 					view.add(new JsonArray().add(id).add(source));
 				}
-				if (xls) {
-					try (HSSFWorkbook workbook = new HSSFWorkbook()) {
-						int line = 0, col = 0;
-			            HSSFSheet sheet = workbook.createSheet(type);
-			            HSSFRow rowhead = sheet.createRow(line++);
-			            HSSFFont fonthead = workbook.createFont();
-			            fonthead.setFontName("Monospace");
-			            fonthead.setBold(true);
-			            HSSFCellStyle stylehead = workbook.createCellStyle();
-		                stylehead.setFont(fonthead);
-			            for (String field : fields.split(",")) {
-			            	Cell cell = rowhead.createCell(col++);
-			            	cell.setCellValue(field);
-			            	cell.setCellStyle(stylehead);
-			            }
-			            HSSFFont font = workbook.createFont();
-			            font.setFontName("Monospace");
-			            HSSFCellStyle style = workbook.createCellStyle();
-		                style.setFont(font);
-			            for (Object item : view.getList()) {
-			            	JsonObject document = ((JsonArray)item).getJsonObject(1);
-			            	HSSFRow row = sheet.createRow(line++);
-			            	col = 0;
-			            	for (String field : fields.split(",")) {
-				            	Cell cell = row.createCell(col++);
-				            	cell.setCellValue(document.getValue(field) != null ? document.getValue(field).toString() : "");
-				            	cell.setCellStyle(style);
-				            }
-			            }
-			            for (;col>-1;col--) {
-			            	sheet.autoSizeColumn(col);
-			            }
-			            context.response().putHeader("content-type", "application/vnd.ms-excel").end(Buffer.buffer(workbook.getBytes()));
-					} catch (IOException error) {
-						context.fail(error);
+				if (csv) {
+					StringBuilder text = new StringBuilder();
+					for (String field : fields.split(",")) {
+						text.append(field+";");
 					}
+					text.append("\n");
+					for (Object row : view.getList()) {
+		            	JsonObject document = ((JsonArray)row).getJsonObject(1);
+		            	for (String field : fields.split(",")) {
+		            		text.append(document.getValue(field) != null ? document.getValue(field).toString()+";" : ";");
+			            }
+						text.append("\n");
+		            }
+		            context.response().putHeader("content-type", "text/csv").end(text.toString());
 				} else {
-					context.response().putHeader("content-type", "application/json").end(view.encode());
+					context.response().putHeader("content-type", "text/json").end(view.encode());
 				}
 			}).exceptionHandler(error -> {
 				context.fail(error);

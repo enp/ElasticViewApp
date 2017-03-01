@@ -89,6 +89,10 @@ var ElasticView = {
 						var cell = (document[column] == undefined) ? "" : document[column]
 						if (typeof cell === 'object')
 							cell = JSON.stringify(cell)
+						if (typeof cell === 'boolean' && cell == true) 
+							cell = '<img src="img/true.png">';
+						if (typeof cell === 'boolean' && cell == false) 
+							cell = '<img src="img/false.png">';
 						row.append("<td class='cell'>"+cell+"</td>")
 					}
 				})
@@ -108,7 +112,7 @@ var ElasticView = {
 		var order  = $("#order").val()
 		var filter = $("#filter").val()
 		var size   = $("#limit").val()
-		window.open("view/"+index+"/"+type+".xls?sort="+sort+"&order="+order+"&filter="+filter+"&size="+size+"&fields="+view[index][type].fields.join())
+		window.open("view/"+index+"/"+type+".csv?sort="+sort+"&order="+order+"&filter="+filter+"&size="+size+"&fields="+view[index][type].fields.join())
 	},
 	
 	viewDocument : function(id) {

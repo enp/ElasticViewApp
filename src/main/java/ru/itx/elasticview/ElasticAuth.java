@@ -88,7 +88,7 @@ public class ElasticAuth {
 		    						} else if (parts.length > 2 && parts[0].equals("view")) {
 		    							HttpMethod method = context.request().method();
 		    							String index = parts[1];
-		    							String type  = parts[2].replace(".xls", "");
+		    							String type  = parts[2].replace(".csv", "");
 		    							if (view.getJsonObject(index) != null && view.getJsonObject(index).getJsonObject(type) != null) {
 		    								if (method == HttpMethod.GET) {
 		    									allowed = true;
