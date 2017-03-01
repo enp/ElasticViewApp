@@ -3,6 +3,7 @@ package ru.itx.elasticview;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
@@ -164,7 +165,9 @@ public class ElasticActions {
 			            }
 						text.append("\n");
 		            }
-		            context.response().putHeader("content-type", "text/csv").end(text.toString());
+					boolean windows = context.request().getHeader("User-Agent").toLowerCase().contains("windows");
+					Buffer buffer = windows ?  Buffer.buffer(text.toString(),"cp1251") : Buffer.buffer(text.toString());
+		            context.response().putHeader("content-type", "text/csv").end(buffer);
 				} else {
 					context.response().putHeader("content-type", "text/json").end(view.encode());
 				}
