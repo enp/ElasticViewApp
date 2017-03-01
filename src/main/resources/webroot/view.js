@@ -98,7 +98,7 @@ var ElasticView = {
 				})
 				table.append(row)
 			})
-			$("#data").append(table)
+			$("#data").append(table).append('<br><div id="total">Total records : '+data.length+'</div><br>')
 		})
 		.fail(function(data) {
 			alert(data.responseText || data.statusText)

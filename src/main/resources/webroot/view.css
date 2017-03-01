@@ -77,6 +77,11 @@ em {
   float: right;
   margin-right: 10px;
 }
+#total {
+  font-weight: bold;
+  font-size: 0.8em;
+  text-align: center;
+}
 div.jsoneditor-menu a {
   color: #3883fa;
 }
