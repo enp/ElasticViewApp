@@ -1,6 +1,6 @@
 # ElasticView #
 
-ElasticView is a simple web application which allows to view and edit ElasticSearch indexes/types as tables
+ElasticView is a simple web application which allows to view and edit [Elasticsearch](https://www.elastic.co/products/elasticsearch) indexes/types as tables
 
 ### How to build ###
 
@@ -35,7 +35,7 @@ to true in elasticview.conf and add users/groups into .elasticview index. See fi
 * example user **janedoe** in this group
 * example user **johndoe** with full access
 
-Just import this file into ElasticSearch before running ElasticView with:
+Import this file into Elasticsearch before running ElasticView with:
 
 ```
 curl -XPOST 127.0.0.1:9200/_bulk --data-binary @elasticview.data.example
